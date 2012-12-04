@@ -3,17 +3,6 @@ desdb
 
 DES file locations and database access
 
-Preparation
------------
-Put your des database username and password in a file ~/.desdb_pass
-
-    username
-    pass
-
-And make sure the file is not readable or writable to others
-
-    chmod go-rw ~/.desdb_pass
-
 Generic Queries
 ---------------
 
@@ -37,6 +26,20 @@ examples
     des-query < sql_file > output.csv
 
     des-query -f json < sql_file > output.json
+
+Preparation
+-----------
+
+You can send your username and password via -u/--user and -p/--password, but it
+is easier to use the password file.  Put your des database username and
+password in a file ~/.desdb_pass
+
+    username
+    pass
+
+And make sure the file is not readable or writable to others
+
+    chmod go-rw ~/.desdb_pass
 
 Installation
 ------------
