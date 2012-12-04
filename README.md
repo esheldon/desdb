@@ -132,19 +132,29 @@ To install under a particular prefix
 ### dependencies 
 
 Note you must first install the oracle libraries and the cx_Oracle python
-library.  For linux you can download and install the default versions.
-However, the official version of cx_Oracle for OSX is broken on recent versions
-of the operating syste. Thus we have bundled a patched version in the following
-files. Choose the one for your architecture.
+library.  For linux you can download and install the default versions if you
+want, or use the bundles listed below.  However, the official version of
+cx_Oracle for OSX is broken on recent versions of the operating syste. Thus we
+have bundled a patched version in the macosx files below. Choose the one for
+your architecture.
 
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v2.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-i386-v2.tar.gz
 
-Install with
+Download the file and untar it using
 
-    ./do-install directory
+    tar xvfz des-oracle-linux-x86-64-v2.tar.gz
 
-And follow the instructions for setting your paths.
+cd into the directory and run
 
+    ./do-install $dir
+
+Where $dir is the location you want the install; this can be anywhere.
+Then source the setup file appropriate for your shell.
+
+    source $dir/setup.sh   # for bash
+    source $dir/setup.csh  # for csh/tcsh
+
+You can put that into your startup file, e.g. ~/.bashrc or ~/.cshrc etc.
 
