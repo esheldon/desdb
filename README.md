@@ -52,7 +52,7 @@ There are scripts to download files using wget
 
 * wget-des: download files from the des web site.
 * wget-des-parallel: download files in parallel from the des web site.
-    Requires the "parallel" program.
+    Requires the "parallel" program. http://www.gnu.org/software/parallel/
 
 Files
 -----
