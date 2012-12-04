@@ -52,21 +52,19 @@ The sub-module "files" has code get standard file names and locations on your
 system, the remote site, and in the database.  The class DESFiles is defined to
 make this easy.  Examples
 
-    # print the location of a red image
+    # print the local path to a red image
     import desdb
     df=desdb.DESFiles()
-    print df.url(type='red_image', 
-                 run='20110829231419_20110802', 
-                 expname='decam--18--38-i-2',
-                 ccd=3)
+    type='red_image'
+    run='20110829231419_20110802', 
+    expname='decam--18--38-i-2',
+    ccd=3)
+    print df.url(type=type, run=run, expname=expname, ccd=ccd)
     /global/project/projectdirs/des/wl/DES/red/blah/red/expname/expname_03.fits.fz
 
-    # get the remote location
+    # get the remote location of the red image by using the 'net' file system.
     df=desdb.DESFiles(fs='net')
-    print df.url(type='red_image', 
-                 run='20110829231419_20110802', 
-                 expname='decam--18--38-i-2',
-                 ccd=3)
+    print df.url(type=type, run=run, expname=expname, ccd=ccd)
     ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/red/blah/red/expname/expname_03.fits.fz
 
 Note you need the DESDATA environment variable set to get the full path to your local file.
