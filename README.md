@@ -51,8 +51,11 @@ Downloading Data
 There are scripts to download files using wget
 
 * wget-des: download files from the des web site.
-* wget-des-parallel: download files in parallel from the des web site.
+* wget-des-parallel: download files in parallel
     Requires the "parallel" program. http://www.gnu.org/software/parallel/
+
+    The parallelization occurs across DES runs, for example if you want
+    to download multiple "red" runs you can use this script.
 
 Note you need the DESDATA environment variable set to the location of your DES
 data locally.  You need the DESREMOTE set to the remote directory (see the DES
