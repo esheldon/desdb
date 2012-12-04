@@ -3,7 +3,29 @@ desdb
 
 DES file locations and database access
 
+Preparation
+-----------
+Put your des database username and password in a file ~/.desdb_pass
 
+    username
+    pass
+
+And make sure the file is not readable or writable to others
+
+    chmod go-rw ~/.desdb_pass
+
+Generic Queries
+---------------
+
+After installation, the script des-query will be in your path.  You
+can send queries on standard input or via the -q option
+
+    des-query -q query
+    des-query < 
+
+examples
+
+    #  
 Installation
 ------------
 
