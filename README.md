@@ -67,8 +67,9 @@ make this easy.  Examples
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
     ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/red/blah/red/expname/expname_03.fits.fz
 
-Note you need the DESDATA environment variable set to get the full path to your local file.
-
+Note you need the DESDATA environment variable set to get the full path to your
+local file.  Other classes of interest are the Red and Coadd classes for
+dealing with those file types.
 
 Connection Class
 ------------------
