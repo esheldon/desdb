@@ -60,12 +60,12 @@ make this easy.  Examples
     expname='decam--18--38-i-2',
     ccd=3)
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
-    /global/project/projectdirs/des/wl/DES/red/blah/red/expname/expname_03.fits.fz
+    /global/project/projectdirs/des/wl/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
     # get the remote location of the red image by using the 'net' file system.
     df=desdb.DESFiles(fs='net')
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
-    ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/red/blah/red/expname/expname_03.fits.fz
+    ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
 Note you need the DESDATA environment variable set to get the full path to your
 local file.  Other classes of interest are the Red and Coadd classes for
