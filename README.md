@@ -32,8 +32,19 @@ Pre-fab queries
 
 There are some scripts with pre-defined queries.
 
+* get-table-info: For the input table name, print the 
+    column names,typecode,typename,precision,scale,value.
+* get-release-runs: Print all runs for input release and file type.
 * get-red-info: Look up all red catalogs and images in the input release
     and write out their file ids, path info, and external url.
+* get-coadd-info: Look up all coadd images in the input release and write out their file ids,
+    along with some other info.
+* get-coadd-srclists: Look up all coadd images for the requested release, find the
+    single epoch 'red' images that were used as input, and write out a json file
+    with the coadd and red image info.  The json file is keyed by coadd_id.
+* get-filelist: Look up the listed file types and write out their local path information.  The
+    types should be a comma separated list.
+
 
 Preparation
 -----------
