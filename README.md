@@ -54,6 +54,12 @@ There are scripts to download files using wget
 * wget-des-parallel: download files in parallel from the des web site.
     Requires the "parallel" program. http://www.gnu.org/software/parallel/
 
+Note you need the DESDATA environment variable set to the location of your DES
+data locally.  You need the DESREMOTE set to the remote directory (see the DES
+wiki to get the current URL
+https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access)
+
+
 Files
 -----
 

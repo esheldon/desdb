@@ -3,8 +3,8 @@
 #
 #  usage:  wget-des [-d dir] type run band
 #
-# type is the file type, "red" or "coadd" "commsrc"
-# band is ignored for type = "commsrc"
+# type is the file type, "red" or "coadd" "raw"
+# band is ignored for type = "raw"
 #
 # Data are copied from
 #
@@ -24,75 +24,116 @@
 function usage_and_exit {
     echo "
 Usage 
-        wget-des [-d dir] type run band
+        wget-des [options] type run band
 
 Description
 
         Download images and catalogs for the input file type, run identifier
-        and band.  The data are, by default, downloaded to 
+        and band.  The data are, by default, downloaded from
+
+            \$DESREMOTE/{type}/{run}/{type} 
+        
+        and downloaded to 
         
             \$DESDATA/{type}/{run}/{type} 
         
         where \$DESDATA is an environment variable pointing to the base of your
-        DES data area. You can send the -d keyword to specify an alternative
-        prefix to \$DESDATA.
+        DES data area and DESREMOTE is the url of the server. You can send the
+        -d keyword to specify an alternative to \$DESDATA, or -r for
+        analternative to DESREMOTE.
 
-        The exception is for type commsrc for which the data go to
-            DESDATA/comm/src/{run}/src 
-        and band is ignored; just send junk for that argument
-
+        The exception is for type 'raw' for which the relevant environment
+        variables are DTSDATA and DTSREMOTE.  Also, the directory for
+        raw images is \$DTSDATA/src/{run}/src
+        
 Arguments
-        type: either 'red' or 'coadd'
+        type: one of 'red' 'coadd' 'raw'
+            note 'commsrc' also works for raw
         run:  The run identifier
         band: g,r,i,z,Y
+            ignored for raw
 Options
-        -d The download directory, defaults to \$DESDATA environment
+        -d The download directory. defaults to \$DESDATA environment
+           variable.
+        -r The remote directory. defaults to \$DESREMOTE  environment
            variable.
 "
     exit 45
 }
 
 if [[ $# -lt 3 ]]; then
+    echo "send 3 args"
     usage_and_exit
 fi
 
 dir=""
-while getopts "n:d:" Option
+remote_dir=""
+while getopts "d:r:" Option
   do
   case $Option in
       d)  dir=$OPTARG ;;
-      [?]) usage_and_exit ;;
+      r)  remote_dir=$OPTARG ;;
+      [?]) echo "bad option"; usage_and_exit ;;
   esac
 done
 shift $(($OPTIND - 1))
-
-if [[ $dir == "" ]]; then
-    if [[ ${DESDATA:+1} == "" ]]; then
-        echo "Either send -d dir or make sure the DESDATA "
-        echo "environment variable is set"
-        exit 45
-    fi
-    dir="$DESDATA"
-fi
 
 download_type="$1"
 run="$2"
 band=$3
 
+if [[ $download_type == "commsrc" ]]; then
+    download_type="raw"
+fi
+
+if [[ $download_type == "raw" ]]; then
+    if [[ $dir == "" ]]; then
+        if [[ ${DTSDATA:+1} == "" ]]; then
+            echo "For raw, either send -d or set the DTSDATA "
+            echo "environment variable"
+            exit 45
+        fi
+        dir="$DTSDATA"
+    fi
+    if [[ $remote_dir == "" ]]; then
+        if [[ ${DTSREMOTE:+1} == "" ]]; then
+            echo "For raw, either send -r or set the DTSREMOTE "
+            echo "environment variable is set"
+            exit 45
+        fi
+        remote_dir="$DTSREMOTE"
+    fi
+else
+    if [[ $dir == "" ]]; then
+        if [[ ${DESDATA:+1} == "" ]]; then
+            echo "Either send -d dir or set the DESDATA "
+            echo "environment variable"
+            exit 45
+        fi
+        dir="$DESDATA"
+    fi
+    if [[ $remote_dir == "" ]]; then
+        if [[ ${DESREMOTE:+1} == "" ]]; then
+            echo "Either send -r remote_dir or set the DESREMOTE "
+            echo "environment variable"
+            exit 45
+        fi
+        remote_dir="$DESREMOTE"
+    fi
+fi
+
+
 case $download_type in
     "red") 
         accept="*-${band}-*[0-9].fits.fz,*-${band}-*_cat.fits"
-        proj="DES"
         type="red"
         ;;
     "coadd")
         accept="*${band}.fits.fz,*${band}_cat.fits"
-        proj="DES"
         type="coadd"
         ;;
-    "commsrc")
+    "raw")
         accept="*.fits.fz"
-        proj="DTS"
         type="src"
         dir=$dir/comm 
         ;;
@@ -100,7 +141,7 @@ case $download_type in
         ;;
 esac
 
-url="ftp://desar.cosmology.illinois.edu/DESFiles/desardata/${proj}/${type}/${run}/${type}"
+url="${remote_dir}/${type}/${run}/${type}"
 echo "
     type:    $type
     run:     $run

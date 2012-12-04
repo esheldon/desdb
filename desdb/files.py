@@ -2,7 +2,6 @@ import copy
 import os
 from sys import stderr
 from . import desdb
-from esutil.ostools import path_join, getenv_check
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
