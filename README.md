@@ -137,9 +137,9 @@ However, the official version of cx_Oracle for OSX is broken on recent versions
 of the operating syste. Thus we have bundled a patched version in the following
 files. Choose the one for your architecture.
 
-    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v1.tar.gz
-    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v1.tar.gz
-    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-i386-v1.tar.gz
+    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
+    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v2.tar.gz
+    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-i386-v2.tar.gz
 
 Install with
 
