@@ -21,11 +21,23 @@ After installation, the script des-query will be in your path.  You
 can send queries on standard input or via the -q option
 
     des-query -q query
-    des-query < 
+    des-query < file
+    cat file | des-query
+
+By default the format is csv.  You can control this withthe -f/--format option.
+Possibilities are csv,json,pretty,pyobj.  pretty is a formatted in nicely for
+viewing but is not good for machine reading.  pyobj can be read from python
+using eval
 
 examples
 
-    #  
+    # Get the runs associated with release "dr012" and files of type "red"
+    des-query -q "select distinct(run) from dr012_files where filetype='red'"
+
+    des-query < sql_file > output.csv
+
+    des-query -f json < sql_file > output.json
+
 Installation
 ------------
 
