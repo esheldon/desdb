@@ -74,11 +74,17 @@ make this easy.  Examples
     # get the remote location of the red image by using the 'net' file system.
     df=desdb.DESFiles(fs='net')
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
-    ftp://the.des.ftp.server/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
+    ftp://the.des.server/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
+
+where "the.des.server" will be replaced by the actual current server. 
 
 Note you need the DESDATA environment variable set to get the full path to your
-local file.  Other classes of interest are the Red and Coadd classes for
-dealing with those file types.
+local file.  You need the DESREMOTE variable set to get the remote directory
+(see the DES wiki to get the current URL
+https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access)
+
+Other classes of interest are the Red and Coadd classes for dealing with those
+file types.
 
 Connection Class
 ------------------
