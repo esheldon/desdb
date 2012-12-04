@@ -45,6 +45,15 @@ There are some scripts with pre-defined queries.
 * get-filelist: Look up the listed file types and write out their local path information.  The
     types should be a comma separated list.
 
+Downloading Data
+----------------
+
+There are scripts to download files using wget
+
+* wget-des: download files from the des web site.
+* wget-des-parallel: download files in parallel from the des web site.
+    Requires the "parallel" program.
+
 Files
 -----
 

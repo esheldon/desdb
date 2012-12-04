@@ -2,6 +2,7 @@
 # run wget-des in parallel
 #
 # requires the program "parallel"
+# http://www.gnu.org/software/parallel/
 #
 # Author
 #   Erin Sheldon, Brookhaven National Laboratory
