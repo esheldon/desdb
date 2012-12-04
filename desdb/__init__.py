@@ -1,5 +1,6 @@
 # files location code is useful even without oracle
 from . import files
+from .files import DESFiles
 
 # catch error if oracle is not found
 try:

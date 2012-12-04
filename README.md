@@ -32,8 +32,8 @@ Pre-fab queries
 
 There are some scripts with pre-defined queries.
 
-* get-table-info: For the input table name, print the 
-    column names,typecode,typename,precision,scale,value.
+* get-table-info: Print the column names,typecode,typename,precision,scale,value
+    for the input table.
 * get-release-runs: Print all runs for input release and file type.
 * get-red-info: Look up all red catalogs and images in the input release
     and write out their file ids, path info, and external url.
@@ -45,6 +45,38 @@ There are some scripts with pre-defined queries.
 * get-filelist: Look up the listed file types and write out their local path information.  The
     types should be a comma separated list.
 
+Files
+-----
+
+The sub-module "files" has code get standard file names and locations on your
+system, the remote site, and in the database.  The class DESFiles is defined to
+make this easy.  Examples
+
+    # print the location of a red image
+    import desdb
+    df=desdb.DESFiles()
+    print df.url(type='red_image', 
+                 run='20110829231419_20110802', 
+                 expname='decam--18--38-i-2',
+                 ccd=3)
+    /global/project/projectdirs/des/wl/DES/red/blah/red/expname/expname_03.fits.fz
+
+    # get the remote location
+    df=desdb.DESFiles(fs='net')
+    print df.url(type='red_image', 
+                 run='20110829231419_20110802', 
+                 expname='decam--18--38-i-2',
+                 ccd=3)
+    ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/red/blah/red/expname/expname_03.fits.fz
+
+Note you need the DESDATA environment variable set to get the full path to your local file.
+
+
+Connection Class
+------------------
+In the sub-module "desdb" we define the Connection class, which inherits from
+the cx_Oracle connection.  See the scripts above for examples of how
+to use this class.
 
 Preparation
 -----------
