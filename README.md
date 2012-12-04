@@ -27,6 +27,14 @@ examples
 
     des-query -f json < sql_file > output.json
 
+Pre-fab queries
+---------------
+
+There are some scripts with pre-defined queries.
+
+    get-red-info.py: Look up all red catalogs and images in the input release
+    and write out their file ids, path info, and external url.
+
 Preparation
 -----------
 
