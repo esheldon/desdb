@@ -75,11 +75,13 @@ make this easy.  Examples
 
     # print the local path to a red image
     import desdb
+
     df=desdb.DESFiles()
     type='red_image'
-    run='20110829231419_20110802', 
-    expname='decam--18--38-i-2',
-    ccd=3)
+    run='20110829231419_20110802'
+    expname='decam--18--38-i-2'
+    ccd=3
+
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
     /global/project/projectdirs/des/wl/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
