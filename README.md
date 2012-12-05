@@ -30,7 +30,7 @@ examples
 Pre-fab queries
 ---------------
 
-There are some scripts with pre-defined queries.  After installation, these
+There are some scripts with pre-defined queries.  After installation these
 will be in your path.
 
 * get-table-info: Print the column names,typecode,typename,precision,scale,value
@@ -49,7 +49,7 @@ will be in your path.
 Downloading Data
 ----------------
 
-There are scripts to download files using wget.  After installation, these
+There are scripts to download files using wget.  After installation these
 will be in your path.
 
 
