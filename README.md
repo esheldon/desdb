@@ -90,7 +90,7 @@ make this easy.  Examples
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
     ftp://the.des.server/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
-where "the.des.server" will be replaced by the actual current server. 
+where "the.des.server" will be the actual server you are using. 
 
 Note you need the DESDATA environment variable set to get the full path to your
 local file.  You need the DESREMOTE variable set to get the remote directory
