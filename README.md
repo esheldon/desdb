@@ -30,7 +30,8 @@ examples
 Pre-fab queries
 ---------------
 
-There are some scripts with pre-defined queries.
+There are some scripts with pre-defined queries.  After installation, these
+will be in your path.
 
 * get-table-info: Print the column names,typecode,typename,precision,scale,value
     for the input table.
@@ -48,7 +49,9 @@ There are some scripts with pre-defined queries.
 Downloading Data
 ----------------
 
-There are scripts to download files using wget
+There are scripts to download files using wget.  After installation, these
+will be in your path.
+
 
 * wget-des: download files from the des web site.
 * wget-des-parallel: download files in parallel
