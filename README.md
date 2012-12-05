@@ -116,7 +116,7 @@ password in a file ~/.desdb_pass
     username
     pass
 
-And make sure the file is not readable or writable to others
+And make sure the file is not readable or writable by others
 
     chmod go-rw ~/.desdb_pass
 
@@ -139,7 +139,7 @@ To install under a particular prefix
 Note you must first install the oracle libraries and the cx_Oracle python
 library.  For linux you can download and install the default versions if you
 want, or use the bundles listed below.  However, the official version of
-cx_Oracle for OSX is broken on recent versions of the operating syste. Thus we
+cx_Oracle for OSX is broken on recent versions of the operating system. Thus we
 have bundled a patched version in the macosx files below. Choose the one for
 your architecture.
 
