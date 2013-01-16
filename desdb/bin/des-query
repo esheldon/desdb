@@ -13,7 +13,7 @@ import desdb
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
-parser.add_option("-q","--query",default=None, help="The query, overriding stdin.")
+parser.add_option("-q","--query",default=None, help="A query to execute instead of stdin.")
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
@@ -21,16 +21,23 @@ parser.add_option("-f","--format",default='csv',
     help=("File format for output.  csv,json,cjson,pyobj,pretty."
           "Default %default."))
 
+parser.add_option("-d","--describe",default=None, help="Describe the given table.")
 def main():
 
     options,args = parser.parse_args(sys.argv[1:])
 
-    query=options.query
-    if options.query is None:
-        query = stdin.read()
+    if options.describe is not None:
+        table=options.describe
 
-    conn=desdb.Connection(user=options.user,password=options.password)
-    res=conn.quickWrite(query,show=options.show,fmt=options.format)
+        conn=desdb.Connection(user=options.user,password=options.password)
+        conn.describe(table, show=options.show)
+    else:
+        query=options.query
+        if options.query is None:
+            query = stdin.read()
+
+        conn=desdb.Connection(user=options.user,password=options.password)
+        res=conn.quickWrite(query,show=options.show,fmt=options.format)
 
 if __name__=="__main__":
     main()

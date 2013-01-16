@@ -1,50 +1,50 @@
 #!/bin/bash
-# Download DES red or coadd files. 
+# DEPRECATED, DONT USE
+# Download DES files. 
 #
-#  usage:  wget-des [options] type run band
+#  usage:  wget-des [options] type run [band]
 #
 # type is the file type, "red" or "coadd" "raw"
-# band is ignored for type = "raw"
+# band is ignored for type = "raw" and "opsred"
 #
-# Data are copied from
+# put your user name and password in ~/.netrc. Don't make it
+# readable to anyone but you.
 #
-#    ftp://desar.cosmology.illinois.edu/DESFiles/desardata/DES/{type}/${run}/{type}/...
+# All data are copied under the $DESDATA directory
 #
-# By default, data are copied under the $DESDATA directory
-#
-#   $DESDATA/{type}/${run}/{type}/...
-# 
-# But an alternative prefix to the environment variable $DESDATA can be
-# specified with the -d keyword
+#   $DESDATA/DES/{type}/${run}/{type}/...
+#   $DESDATA/DTS/{type}/${run}/{type}/...
+#   $DESDATA/OPS/{type}/${run}/{type}/...
 #
 # Author
 #   Erin Sheldon, Brookhaven National Laboratory
+# Changes
+#   2013-01-13:
+#     moved to using new https address.  This now requires user
+#     login and password.  These should be stored in ~/.netrc
+#
+#        machine {host} login {login} password {password}
+#   
 #
 
 function usage_and_exit {
     echo "
 Usage 
-        wget-des [options] type run band
+        wget-des [options] type run [band]
 
 Description
 
         Download images and catalogs for the input file type, run identifier
-        and band.  The data are, by default, downloaded from
+        and band.  The data are downloaded from
 
-            \$DESREMOTE/{type}/{run}/{type} 
+            \$DESREMOTE/DES/{type}/{run}/{type} 
         
-        and downloaded to 
+        (although DES could be DTS or OPS) and downloaded to 
         
-            \$DESDATA/{type}/{run}/{type} 
+            \$DESDATA/DES/{type}/{run}/{type} 
         
         where \$DESDATA is an environment variable pointing to the base of your
-        DES data area and DESREMOTE is the url of the server. You can send the
-        -d keyword to specify an alternative to \$DESDATA, or -r for
-        analternative to DESREMOTE.
-
-        The exception is for type 'raw' for which the relevant environment
-        variables are DTSDATA and DTSREMOTE.  Also, the directory for
-        raw images is \$DTSDATA/src/{run}/src
+        DES data area and \$DESREMOTE is the url of the server.
         
 Arguments
         type: one of 'red' 'coadd' 'raw'
@@ -52,77 +52,54 @@ Arguments
         run:  The run identifier
         band: g,r,i,z,Y
             ignored for raw
-Options
-        -d The download directory. defaults to \$DESDATA environment
-           variable.
-        -r The remote directory. defaults to \$DESREMOTE  environment
-           variable.
 "
     exit 45
 }
 
-if [[ $# -lt 3 ]]; then
-    echo "send 3 args"
-    usage_and_exit
+echo "THIS COMMAND IS DEPRECATED, DONT USE IT"
+
+#if [[ ! -e ~/.desdb_pass ]]; then
+#    echo "put your user/pass in ~/.desdb_pass"
+#    exit 1
+#fi
+
+#read user pass <<< $(cat ~/.desdb_pass)
+
+if [[ ${DESDATA:+1} == "" ]]; then
+    echo "set DESDATA environment variable"
+    exit 45
+fi
+if [[ ${DESREMOTE:+1} == "" ]]; then
+    echo "set DESREMOTE environment variable"
+    exit 45
 fi
 
-dir=""
-remote_dir=""
-while getopts "d:r:" Option
-  do
-  case $Option in
-      d)  dir=$OPTARG ;;
-      r)  remote_dir=$OPTARG ;;
-      [?]) echo "bad option"; usage_and_exit ;;
-  esac
-done
-shift $(($OPTIND - 1))
+dir="$DESDATA"
+remote_dir="$DESREMOTE"
 
 download_type="$1"
 run="$2"
-band=$3
+band="$3"
 
 if [[ $download_type == "commsrc" ]]; then
     download_type="raw"
 fi
 
 if [[ $download_type == "raw" ]]; then
-    if [[ $dir == "" ]]; then
-        if [[ ${DTSDATA:+1} == "" ]]; then
-            echo "For raw, either send -d or set the DTSDATA "
-            echo "environment variable"
-            exit 45
-        fi
-        dir="$DTSDATA"
-    fi
-    if [[ $remote_dir == "" ]]; then
-        if [[ ${DTSREMOTE:+1} == "" ]]; then
-            echo "For raw, either send -r or set the DTSREMOTE "
-            echo "environment variable is set"
-            exit 45
-        fi
-        remote_dir="$DTSREMOTE"
-    fi
+    dir="$dir/DTS"
+    remote_dir="$remote_dir/DTS"
+elif [[ $download_type == "opsred" ]]; then
+    dir="$dir/OPS"
+    remote_dir="$remote_dir/OPS"
 else
-    if [[ $dir == "" ]]; then
-        if [[ ${DESDATA:+1} == "" ]]; then
-            echo "Either send -d dir or set the DESDATA "
-            echo "environment variable"
-            exit 45
-        fi
-        dir="$DESDATA"
-    fi
-    if [[ $remote_dir == "" ]]; then
-        if [[ ${DESREMOTE:+1} == "" ]]; then
-            echo "Either send -r remote_dir or set the DESREMOTE "
-            echo "environment variable"
-            exit 45
-        fi
-        remote_dir="$DESREMOTE"
-    fi
+    dir="$dir/DES"
+    remote_dir="$remote_dir/DES"
 fi
 
-
+if [[ $download_type == "red" || $download_type == "coadd" ]]; then
+    echo "send band"
+    usage_and_exit
+fi
 case $download_type in
     "red") 
         accept="*-${band}-*[0-9].fits.fz,*-${band}-*_cat.fits"
@@ -137,11 +114,17 @@ case $download_type in
         type="src"
         dir=$dir/comm 
         ;;
+    "opsred")
+        accept="*"
+        type="red"
+        ;;
       *) usage_and_exit
         ;;
 esac
 
+local_url=$dir/${type}/${run}/${type}
 url="${remote_dir}/${type}/${run}/${type}"
+
 echo "
     type:    $type
     run:     $run
@@ -150,10 +133,19 @@ echo "
     dir:     $dir
 "
 
-echo "chdir to dir $dir"
-cd "$dir"
+if [[ ! -e $local_url ]]; then
+    echo "making dir: $local_url"
+    mkdir -p "$local_url"
+    if [[ $? != "0" ]]; then
+        echo "failed to make dir, exiting"
+        exit 45
+    fi
+fi
+
+echo "chdir to dir $local_url"
+cd "$local_url"
 if [[ "$?" != "0" ]]; then
-    echo "Failed to chdir to: $dir"
+    echo "Failed to chdir to: $local_url"
     exit 45
 fi
 
@@ -163,11 +155,12 @@ fi
 # use -nv for non-verbose 
 #    --progress=dot:mega     \
 wget                        \
+    --no-check-certificate  \
     -c                      \
     -nv                     \
     --mirror                \
     -nH                     \
-    --cut-dirs=3            \
+    --cut-dirs=6            \
     --no-parent             \
     --tries 50              \
     --accept "$accept"      \

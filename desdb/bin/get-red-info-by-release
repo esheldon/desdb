@@ -33,10 +33,10 @@ def main():
     release=args[0].strip()
     band=args[1].strip()
 
-    desdb.files.get_red_info(release,band,
-                             user=options.user,password=options.password,
-                             show=options.show, 
-                             doprint=True, fmt=options.format)
+    desdb.files.get_red_info_by_release(release,band,
+                                        user=options.user,password=options.password,
+                                        show=options.show, 
+                                        doprint=True, fmt=options.format)
     return
 
 if __name__=="__main__":

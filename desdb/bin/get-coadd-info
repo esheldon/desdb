@@ -46,10 +46,10 @@ def main():
         im.run,
         im.tilename,
         im.band,
-        '$DESDATA/' || im.path as image_url,
-        '%(netroot)s/' || im.path as image_url_remote,
-        '$DESDATA/' || cat.path as cat_url,
-        '%(netroot)s/' || cat.path as cat_url_remote
+        '$DESDATA/'    || im.project || '/' || im.path as image_url,
+        '%(netroot)s/' || im.project || '/' || im.path as image_url_remote,
+        '$DESDATA/'    || im.project || '/' || cat.path as cat_url,
+        '%(netroot)s/' || im.project || '/' || cat.path as cat_url_remote
     from
         %(release)s_files cat,
         %(release)s_files im

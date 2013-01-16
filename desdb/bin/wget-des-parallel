@@ -25,8 +25,6 @@ Arguments
 
 Options
         -n The number of parallel jobs.  Defaults to 3
-        -d The download directory, defaults to \$DESDATA environment
-           variable.
 "
     exit 45
 }
@@ -40,7 +38,6 @@ while getopts "n:h" Option
   do
   case $Option in
       n)  njobs=$OPTARG ;;
-      d)  dir=$OPTARG ;;
       [?]) usage_and_exit ;;
   esac
 done
@@ -49,9 +46,4 @@ shift $(($OPTIND - 1))
 type=$1
 band=$2
 
-opts=""
-if [[ $dir != "" ]]; then
-    opts="-d ${dir}"
-fi
-
-cat - | parallel -u -j${njobs} "wget-des ${opts} ${type} {} ${band}"
+cat - | parallel -u -j${njobs} "wget-des ${type} {} ${band}"

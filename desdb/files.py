@@ -1,7 +1,10 @@
 import copy
 import os
 from sys import stderr
-from . import desdb
+try:
+    from . import desdb
+except:
+    print 'could not import desdb'
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
@@ -17,6 +20,11 @@ def get_des_rootdir(**keys):
         return get_net_rootdir()
     else:
         raise ValueError("fs should be 'nfs' or 'hdfs'")
+
+def get_default_des_project():
+    if 'DESPROJ' not in os.environ:
+        raise ValueError("DESPROJ environment variable is not set")
+    return os.environ['DESPROJ']
 
 def get_nfs_rootdir():
     if 'DESDATA' not in os.environ:
@@ -43,8 +51,8 @@ def get_url(type, **keys):
 get_name=get_url
 get_path=get_url
 
-def get_expnames(release, band, show=False,
-                 user=None,password=None):
+def get_expnames_by_release(release, band, show=False,
+                            user=None,password=None):
     """
     This is usually much faster then the get_red_info query
     """
@@ -69,26 +77,27 @@ def get_expnames(release, band, show=False,
     curs.close()
     return expnames
 
-def get_red_info(release, band, 
-                 user=None,password=None,
-                 desdata=None,
-                 show=True,
-                 doprint=False, fmt='json'):
+def get_red_info_by_release(release, band, 
+                            user=None,password=None,
+                            desdata=None,
+                            show=True,
+                            doprint=False, fmt='json'):
 
     net_rootdir=get_des_rootdir(fs='net')
 
     # note removing 0 dec stuff because there are dups
     query="""
     select
+        im.project,
         im.file_exposure_name as expname,
         im.band,
         im.ccd,
         im.id as image_id,
-        '$DESDATA/' || im.path as image_url,
-        '%(netroot)s/' || im.path as image_url_remote,
+        '$DESDATA/'    || im.project || '/' || im.path as image_url,
+        '%(netroot)s/' || im.project || '/' || im.path as image_url_remote,
         cat.id as cat_id,
-        '$DESDATA/' || cat.path as cat_url,
-        '%(netroot)s/' || cat.path as cat_url_remote
+        '$DESDATA/'    || im.project || '/' || cat.path as cat_url,
+        '%(netroot)s/' || im.project || '/' || cat.path as cat_url_remote
     from
         %(release)s_files cat,
         %(release)s_files im
@@ -110,16 +119,16 @@ def get_red_info(release, band,
         data=conn.quick(query,show=show)
         return data
 
-def get_red_info_byexp(release, band, 
-                       user=None,password=None,
-                       desdata=None,
-                       show=True,
-                       doprint=False, fmt='json'):
+def get_red_info_release_byexp(release, band, 
+                               user=None,password=None,
+                               desdata=None,
+                               show=True,
+                               doprint=False, fmt='json'):
 
-    infolist = get_red_info(release, band, 
-                            user=user,password=password,
-                            desdata=desdata,
-                            show=show)
+    infolist = get_red_info_by_release(release, band, 
+                                       user=user,password=password,
+                                       desdata=desdata,
+                                       show=show)
 
     d={}
     for info in infolist:
@@ -548,11 +557,11 @@ class DESFiles:
 #   - .fz might not always hold
 #   - EXPNAME can also be built from POINTING-BAND-VISIT
 _fs={}
-_fs['red_run']   = {'remote_dir':'$DESREMOTE/red/$RUN/red',
-                    'dir':         '$DESDATA/red/$RUN/red'}
+_fs['red_run']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red',
+                    'dir':         '$DESDATA/$DESPROJ/red/$RUN/red'}
 
-_fs['red_exp']   = {'remote_dir':'$DESREMOTE/red/$RUN/red/$EXPNAME',
-                    'dir':         '$DESDATA/red/$RUN/red/$EXPNAME'}
+_fs['red_exp']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red/$EXPNAME',
+                    'dir':         '$DESDATA/$DESPROJ/red/$RUN/red/$EXPNAME'}
 
 _fs['red_image'] = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
@@ -562,8 +571,8 @@ _fs['red_cat']   = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_cat.fits'}
 
-_fs['coadd_run']   = {'remote_dir': '$DESREMOTE/coadd/$RUN/coadd',
-                      'dir':        '$DESDATA/coadd/$RUN/coadd'}
+_fs['coadd_run']   = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$RUN/coadd',
+                      'dir':        '$DESDATA/$DESPROJ/coadd/$RUN/coadd'}
 _fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':        _fs['coadd_run']['dir'], 
                       'name':       '$TILENAME_$BAND.fits.fz'}
@@ -577,11 +586,20 @@ def expand_desvars(string_in, **keys):
     root=get_des_rootdir(**keys)
     root_remote=get_des_rootdir(fs='net')
 
+
     if string.find('$DESDATA') != -1:
         string = string.replace('$DESDATA', root)
 
     if string.find('$DESREMOTE') != -1:
         string = string.replace('$DESREMOTE', root_remote)
+
+    if string.find('$DESPROJ') != -1:
+        project=keys.get('project', None)
+        if project is None:
+            project=get_default_des_project()
+
+        string = string.replace('$DESPROJ', str(project))
+
 
     if string.find('$RUN') != -1:
         run=keys.get('run', None)
