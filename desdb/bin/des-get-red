@@ -1,0 +1,42 @@
+#!/usr/bin/python
+"""
+    %prog [options] run
+
+Download all or part of a "red" imaging run.
+"""
+
+import sys
+import os
+
+from optparse import OptionParser
+parser=OptionParser(__doc__)
+
+_default_project='OPS'
+parser.add_option('--expname',default=None, help=('Download only this exposure'))
+
+parser.add_option('-p','--project',
+                  default='OPS',
+                  help="The DES 'project', default is %default")
+
+class RedDownloader(object):
+    def __init__(self, run, **keys):
+        self.run=run
+        self.project=keys.get('project',
+        self.expname=keys.get('expname',None)
+
+    def get_remote_dir(self):
+
+def main():
+    options,args = parser.parse_args(sys.argv[1:])
+
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(1)
+
+    run=args[0]
+    expname=options.expname
+
+    d=Downloader(run, expname=expname)
+    d.pull()
+
+main()

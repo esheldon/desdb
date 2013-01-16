@@ -3,15 +3,15 @@ import glob
 from distutils.core import setup
 
 scripts= ['des-query',
-          'get-coadd-info',
-          'get-coadd-srclists',
-          'get-filelist',
-          'get-red-info',
+          'des-get-red',
+          'get-coadd-info-by-release',
+          'get-coadd-srclists-by-release',
+          'get-release-filelist',
+          'get-red-info-by-release',
           'get-release-runs',
-          'get-table-info',
-          'wget-des',
-          'wget-des-parallel',
-          'des-query']
+          'get-table-info']
+#          'wget-des',
+#          'wget-des-parallel']
 
 scripts=[os.path.join('desdb','bin',s) for s in scripts]
 
