@@ -24,7 +24,6 @@ def main():
 
     run=args[0]
     exptime=options.exptime
-    if exptime is not None:
 
     query="""
         select 
@@ -36,6 +35,7 @@ def main():
             and image.exposureid=exposure.id 
             and image.project='OPS' 
             and image.run='%(run)s'""" % {'run':run}
+
     if exptime is not None:
         exptime=float(options.exptime)
         query = query + """
