@@ -84,6 +84,17 @@ class RedDownloader(object):
                                        use_netrc=True)
         syncer.sync()
 
+    def sync_run(self):
+        remote_dir=self._dfremote.dir(type='red_run', 
+                                      project=self.project,
+                                      run=self.run)
+
+        lister=desdb.sync.URLLister(remote_dir, use_netrc=True)
+        for exp_url in lister:
+            if exp_url[-1] == '/':
+                exp_url=exp_url[0:len(exp_url)-1]
+            expname=os.path.basename(exp_url)
+            self.sync_exposure(expname)
 
 def main():
     options,args = parser.parse_args(sys.argv[1:])
