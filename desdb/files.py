@@ -19,7 +19,7 @@ def get_des_rootdir(**keys):
     elif fs == 'net':
         return get_net_rootdir()
     else:
-        raise ValueError("fs should be 'nfs' or 'hdfs'")
+        raise ValueError("fs should be 'nfs' or 'net' or 'hdfs'")
 
 def get_default_des_project():
     if 'DESPROJ' not in os.environ:
@@ -473,7 +473,7 @@ class DESFiles:
         The file system.  Default is DES_DEFAULT_FS
     """
     def __init__(self, fs=None):
-        if not fs:
+        if fs is None:
             fs=get_default_fs()
         self.fs = fs
         self._root=get_des_rootdir(fs=self.fs)
@@ -496,8 +496,6 @@ class DESFiles:
             Exposure name
             Can also be built up by sending keywords
                 pointing,band and visit
-        fs:
-            over-ride the default file system
         """
         if type is None:
             return self.root()
@@ -505,7 +503,10 @@ class DESFiles:
         if type not in _fs:
             raise ValueError("Unsupported path type '%s'" % type)
         
-        url = _fs[type]['dir']
+        if self.fs == 'net':
+            url = _fs[type]['remote_dir']
+        else:
+            url = _fs[type]['dir']
 
         url = self._expand_desvars(url, **keys)
         return url
@@ -535,8 +536,6 @@ class DESFiles:
             The band, e.g. 'i'
         tilename: string
             Tilename for coadds
-        fs:
-            over-ride the default file system
         """
         if type is None:
             return self.root()
@@ -549,7 +548,7 @@ class DESFiles:
     name=url
 
     def _expand_desvars(self, url, **keys):
-        keys['fs'] = keys.get('fs',self.fs)
+        keys['fs'] = self.fs
         return expand_desvars(url, **keys)
 
 

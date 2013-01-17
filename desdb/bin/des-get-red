@@ -3,10 +3,27 @@
     %prog [options] run
 
 Download all or part of a "red" imaging run.
+
+put your user name and password in ~/.netrc. Don't make it readable to anyone
+but yourself.  E.g.
+        machine {host} login {login} password {password}
+
+You do need to set the local and remote DES data directory roots as environment
+variables
+
+    $DESDATA
+    $DESREMOTE
+
+e.g.
+    export DESDATA=/astro/u/astrodat/data/desdata
+    export DESREMOTE=https://{host}/DESFiles/desardata
+
+If you are a DES member you can ask around to get a host name.
 """
 
 import sys
 import os
+import desdb
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
@@ -14,17 +31,59 @@ parser=OptionParser(__doc__)
 _default_project='OPS'
 parser.add_option('--expname',default=None, help=('Download only this exposure'))
 
-parser.add_option('-p','--project',
-                  default='OPS',
+parser.add_option('--project',
+                  default=_default_project,
                   help="The DES 'project', default is %default")
+
+parser.add_option("--clobber",action="store_true", 
+                  help=("download the files even if local copies exist and "
+                        "are no older than the remote versions"))
+
+parser.add_option("--debug",action="store_true", 
+                  help="print debugging messages")
+parser.add_option("--progress",action="store_true", 
+                  help="show detailed progress on each file")
+
 
 class RedDownloader(object):
     def __init__(self, run, **keys):
         self.run=run
-        self.project=keys.get('project',
+        self.project=keys.get('project',_default_project)
         self.expname=keys.get('expname',None)
+        self.clobber=keys.get('clobber',False)
 
-    def get_remote_dir(self):
+        self.show_progress=keys.get('show_progress',False)
+        self.debug=keys.get('debug',False)
+
+        self._dfremote=desdb.files.DESFiles(fs='net')
+        self._dflocal=desdb.files.DESFiles()
+
+    def sync(self):
+        if self.expname is not None:
+            self.sync_exposure(self.expname)
+        else:
+            self.sync_run()
+
+    def sync_exposure(self, expname):
+        """
+        Sync the given exposure
+        """
+        local_dir=self._dflocal.dir(type='red_exp', 
+                                    project=self.project,
+                                    run=self.run,
+                                    expname=expname)
+        remote_dir=self._dfremote.dir(type='red_exp', 
+                                      project=self.project,
+                                      run=self.run,
+                                      expname=expname)
+
+        syncer=desdb.sync.Synchronizer(remote_dir, local_dir, 
+                                       clobber=self.clobber,
+                                       show_progress=self.show_progress,
+                                       debug=self.debug,
+                                       use_netrc=True)
+        syncer.sync()
+
 
 def main():
     options,args = parser.parse_args(sys.argv[1:])
@@ -36,7 +95,9 @@ def main():
     run=args[0]
     expname=options.expname
 
-    d=Downloader(run, expname=expname)
-    d.pull()
+    d=RedDownloader(run, expname=expname, clobber=options.clobber,
+                    debug=options.debug,
+                    show_progress=options.progress)
+    d.sync()
 
 main()
