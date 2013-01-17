@@ -4,7 +4,8 @@ from sys import stderr
 try:
     from . import desdb
 except:
-    print 'could not import desdb'
+    # this is usually because the oracle libraries are not installed
+    pass
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')

@@ -28,7 +28,7 @@ _defdb = 'desoper'
 
 _release_map={'dc6b':'dr012', 'dr012':'dr012'}
 
-_prefetch=10000
+_PREFETCH=10000
 
 def dataset2release(dataset):
     if dataset not in _release_map:
@@ -109,7 +109,7 @@ class Connection(cx_Oracle.Connection):
         curs=self.cursor()
 
         # pre-fetch
-        curs.arraysize = _prefetch
+        curs.arraysize = _PREFETCH
 
         if show: 
             stderr.write(query)
@@ -153,7 +153,7 @@ class Connection(cx_Oracle.Connection):
         """
 
         curs=self.cursor()
-        curs.arraysize = _prefetch
+        curs.arraysize = _PREFETCH
 
         if show: 
             stderr.write(query)
@@ -192,7 +192,7 @@ class Connection(cx_Oracle.Connection):
             stderr.write(q)
 
         curs = self.cursor()
-        curs.arraysize = _prefetch
+        curs.arraysize = _PREFETCH
 
         curs.execute(q) 
         print_cursor(curs,fmt='pretty')
