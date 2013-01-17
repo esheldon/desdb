@@ -106,7 +106,9 @@ def main():
     run=args[0]
     expname=options.expname
 
-    d=RedDownloader(run, expname=expname, clobber=options.clobber,
+    d=RedDownloader(run, 
+                    expname=expname, 
+                    clobber=options.clobber,
                     debug=options.debug,
                     show_progress=options.progress)
     d.sync()
