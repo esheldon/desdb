@@ -6,12 +6,14 @@ List the exposure names for the red run
 """
 
 import sys
+from sys import stderr
 import desdb
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
-parser.add_option('--exptime',default=30.0,
+parser.add_option('--exptime',default=None,
                   help="ensure exptime > this value, default %default")
+parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 
 def main():
     options,args = parser.parse_args(sys.argv[1:])
@@ -21,7 +23,9 @@ def main():
         sys.exit(1)
 
     run=args[0]
-    exptime=float(options.exptime)
+    exptime=options.exptime
+    if exptime is not None:
+
     query="""
         select 
             distinct(exposurename)
@@ -31,10 +35,14 @@ def main():
             image.imagetype='red' 
             and image.exposureid=exposure.id 
             and image.project='OPS' 
-            and image.run='%(run)s' 
-            and exposure.exptime > %(exptime)f
-            """
-    query=query % {'run': run, 'exptime':exptime}
+            and image.run='%(run)s'""" % {'run':run}
+    if exptime is not None:
+        exptime=float(options.exptime)
+        query = query + """
+            and exposure.exptime > %(exptime)f""" % {'exptime':exptime}
+
+    if options.show:
+        print >>stderr,query
 
     conn=desdb.Connection()
     res=conn.quick(query)
