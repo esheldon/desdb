@@ -2,8 +2,10 @@
 """
     %prog [options]
 
-Take the query on standard input, or via the -q parameter write the results on
-standard output.
+Take the query on standard input, or via the -q parameter.
+
+Write the results on standard output.
+
 """
 
 import sys
@@ -17,11 +19,15 @@ parser.add_option("-q","--query",default=None, help="A query to execute instead 
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
-parser.add_option("-f","--format",default='csv',
-    help=("File format for output.  csv,json,cjson,pyobj,pretty."
-          "Default %default."))
 
-parser.add_option("-d","--describe",default=None, help="Describe the given table.")
+parser.add_option("-f","--format",default=None,
+    help=("File format for output.  csv,json,cjson,pyobj,pretty."
+          "Default %default for ordinary queries."))
+
+parser.add_option("-d","--describe",default=None, 
+                  help="Describe the given table. Default format is 'pretty'")
+parser.add_option("-l","--list-tables",action='store_true', 
+                  help="List available tables. Default format is 'pretty'")
 def main():
 
     options,args = parser.parse_args(sys.argv[1:])
@@ -29,15 +35,32 @@ def main():
     if options.describe is not None:
         table=options.describe
 
+        format=options.format
+        if options.format is None:
+            format='pretty'
+
         conn=desdb.Connection(user=options.user,password=options.password)
-        conn.describe(table, show=options.show)
+        conn.describe(table, show=options.show,
+                      fmt=format)
+    elif options.list_tables:
+        format=options.format
+        if options.format is None:
+            format='pretty'
+
+        conn=desdb.Connection(user=options.user,password=options.password)
+        conn.list_tables(show=options.show,
+                         fmt=format)
     else:
         query=options.query
         if options.query is None:
             query = stdin.read()
 
+        format=options.format
+        if options.format is None:
+            format='csv'
+
         conn=desdb.Connection(user=options.user,password=options.password)
-        res=conn.quickWrite(query,show=options.show,fmt=options.format)
+        res=conn.quickWrite(query,show=options.show,fmt=format)
 
 if __name__=="__main__":
     main()

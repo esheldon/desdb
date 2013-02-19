@@ -56,6 +56,9 @@ class Connection(cx_Oracle.Connection):
 
     describe:
         Print a description of the specified table.
+
+    list_tables:
+        List all available tables, as available in the all_tables table.
     """
     def __init__(self, user=None, password=None, host=_defhost,
                  port=_defport, dbname=_defdb):
@@ -162,7 +165,7 @@ class Connection(cx_Oracle.Connection):
         print_cursor(curs, fmt=fmt, header=header, file=file)
         curs.close()
 
-    def describe(self, table, show=False):
+    def describe(self, table, fmt='pretty', show=False):
         """
         Print a simple description of the input table.
         """
@@ -195,7 +198,7 @@ class Connection(cx_Oracle.Connection):
         curs.arraysize = _prefetch
 
         curs.execute(q) 
-        print_cursor(curs,fmt='pretty')
+        print_cursor(curs,fmt=fmt)
 
         # now indexes
         q = """
@@ -211,6 +214,30 @@ class Connection(cx_Oracle.Connection):
         print_cursor(curs, fmt='pretty')
 
         curs.close()
+
+    def list_tables(self, fmt='pretty', show=False):
+        """
+        Print a simple description of the input table.
+        """
+        q="""
+            SELECT
+                owner, table_name
+            FROM
+                all_tables
+        """
+
+        if show:
+            stderr.write(q)
+
+        curs = self.cursor()
+        curs.arraysize = _prefetch
+
+        curs.execute(q) 
+        print_cursor(curs,fmt=fmt)
+
+        curs.close()
+
+
 
 
 def cursor2dictlist(curs, lower=True):
