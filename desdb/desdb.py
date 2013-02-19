@@ -210,6 +210,7 @@ class Connection(cx_Oracle.Connection):
                 table_name = '%s' order by index_name, column_position
         """ % table.upper()
 
+        print
         curs.execute(q)
         print_cursor(curs, fmt='pretty')
 
@@ -338,40 +339,84 @@ class CursorWriter:
             raise RuntimeError("Interrupt encountered")
         return nresults
 
-    def write_pretty(self, curs, delim=' ', maxwidth=30):
-
-        # build up a format string
-        formats=[]
-        separators=[]
-        names=[]
-        for d in curs.description:
-            dsize = d[2]
-            if dsize > maxwidth:
-                dsize=maxwidth
-
-            formats.append('%'+repr(dsize)+'s')
-            names.append(d[0])
-            separators.append('-'*dsize)
-
-        format=delim.join(formats)
-
-        count = 0
+    def write_pretty(self, curs, **keys):
         try:
-            for row in curs:
-                if ((count % 50) == 0):
-                    self.file.write('\n')
-                    self.file.write(format % tuple(names))
-                    self.file.write('\n')
-                    self.file.write(format % tuple(separators))
-                    self.file.write('\n')
-
-                self.file.write(format % row)
-                self.file.write('\n')
-
-                count += 1
+            self._write_pretty(curs, **keys)
         except KeyboardInterrupt:
             curs.close()
             raise RuntimeError("Interrupt encountered")
+
+    def _write_pretty(self, curs, **keys):
+
+        max_lens=[]
+        names=[]
+        for d in curs.description:
+            name=d[0]
+            names.append(name)
+            max_lens.append( len(name) )
+        nfields = len(names)
+
+        strings=[]
+        for row in curs:
+            cols=[]
+            for i,colval in enumerate(row):
+                name=names[i]
+                colstr=str(colval)
+                l=len(colstr)
+
+                if l > max_lens[i]:
+                    max_lens[i]=l
+
+                cols.append(colstr)
+            strings.append(cols)
+                
+        # now create the formats for writing each field
+        # and the separator
+        separator = []
+        forms = []
+        for i,length in enumerate(max_lens):
+            fmt='%'+str(length)+'s'
+
+            #pad = 2
+            #if i == (nfields-1):
+            #    pad=1
+
+            #sep = '%s' % '-'*(length+pad)
+            sep = '%s' % '-'*length
+
+            forms.append(fmt)
+            separator.append(sep)
+
+        row_fmt=' | '.join(forms)
+        separator='-+-'.join(separator)
+
+        header = []
+        for i in xrange(nfields): 
+            name=names[i]
+            cname = center_text(name,max_lens[i])
+            header.append(cname)
+
+        header=' | '.join(header)
+
+        self.file.write(header)
+        self.file.write('\n')
+        self.file.write(separator)
+        self.file.write('\n')
+
+        for i,row in enumerate(strings):
+            if (((i+1) % 50) == 0):
+                self.file.write(separator)
+                self.file.write('\n')
+                self.file.write(header)
+                self.file.write('\n')
+                self.file.write(separator)
+                self.file.write('\n')
+            
+            self.file.write(row_fmt % tuple(row))
+            self.file.write('\n')
+
+        self.file.flush()
+
 
 class ObjWriter:
     def __init__(self, file=sys.stdout, fmt='csv', header='names'):
@@ -497,3 +542,10 @@ def get_numpy_descr(meta):
 
         descr.append(d)
     return descr
+
+def center_text(text, width, spacer=' '):
+    text = text.strip()
+    space = width - len(text)
+    return spacer*(space/2) + text + spacer*(space/2 + space%2)
+
+

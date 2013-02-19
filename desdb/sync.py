@@ -109,8 +109,10 @@ class Synchronizer(object):
     checking.  Could do it all in python but the timezone issues are
     too much to deal with.
 
-    Always copy to /tmp and then move the file.  This way we don't end up with
-    a half-copied file in the final location
+    Always copy to a temporary file in the output directory and then move the
+    file.  This way we don't end up with a half-copied file in the final
+    location.
+
     """
     def __init__(self, remote_url, local_dir, 
                  use_netrc=False,
