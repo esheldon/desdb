@@ -21,7 +21,7 @@ parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 
 parser.add_option("-f","--format",default=None,
-    help=("File format for output.  csv,json,cjson,pyobj,pretty."
+    help=("File format for output.  csv,space,tab,json,cjson,pyobj,pretty."
           "Default %default for ordinary queries."))
 
 parser.add_option("-d","--describe",default=None, 
@@ -40,16 +40,14 @@ def main():
             format='pretty'
 
         conn=desdb.Connection(user=options.user,password=options.password)
-        conn.describe(table, show=options.show,
-                      fmt=format)
+        conn.describe(table, show=options.show, fmt=format)
     elif options.list_tables:
         format=options.format
         if options.format is None:
             format='pretty'
 
         conn=desdb.Connection(user=options.user,password=options.password)
-        conn.list_tables(show=options.show,
-                         fmt=format)
+        conn.list_tables(show=options.show, fmt=format)
     else:
         query=options.query
         if options.query is None:

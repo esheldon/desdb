@@ -3,6 +3,10 @@ desdb
 
 DES file locations and database access
 
+Note this package is in flux at the moment as things change in DESDM.
+Also, we are moving to using ~/.netrc for authentication for the file
+downloads.
+
 Generic Queries
 ---------------
 

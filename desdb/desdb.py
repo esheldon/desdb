@@ -212,7 +212,7 @@ class Connection(cx_Oracle.Connection):
 
         print
         curs.execute(q)
-        print_cursor(curs, fmt='pretty')
+        print_cursor(curs, fmt=fmt)
 
         curs.close()
 
@@ -231,7 +231,7 @@ class Connection(cx_Oracle.Connection):
             stderr.write(q)
 
         curs = self.cursor()
-        curs.arraysize = _prefetch
+        curs.arraysize = _PREFETCH
 
         curs.execute(q) 
         print_cursor(curs,fmt=fmt)
@@ -282,10 +282,8 @@ def write_json(obj, fmt):
 
 class CursorWriter:
     """
-
-    The only reason for it is that, for csv and pretty formatting, we can work
-    row by row and save memory.  The other fmts we will use the ObjWriter
-
+    The only reason for it is that, for csv, we can work row by row and save
+    memory.
     """
     def __init__(self, file=sys.stdout, fmt='csv', header='names'):
         self.fmt=fmt
@@ -297,7 +295,7 @@ class CursorWriter:
         Write rows from the cursor.
         """
 
-        if self.fmt == 'csv':
+        if self.fmt in ['csv','space','tab']:
             self.write_csv(curs)
         elif self.fmt == 'pretty':
             self.write_pretty(curs)
@@ -319,9 +317,23 @@ class CursorWriter:
         if 0 == ncol:
             return
 
-        writer = csv.writer(self.file,dialect='excel',
-                            quoting=csv.QUOTE_MINIMAL,
-                            lineterminator = '\n')
+        if self.fmt=='csv':
+            writer = csv.writer(self.file,dialect='excel',
+                                quoting=csv.QUOTE_MINIMAL,
+                                lineterminator = '\n')
+        else:
+            if self.fmt=='space':
+                delim=' '
+            elif self.fmt=='tab':
+                delim='\t'
+            else:
+                raise ValueError("bad format type: '%s'" % self.fmt)
+
+            writer = csv.writer(self.file,dialect='excel',
+                                delimiter=delim,
+                                quoting=csv.QUOTE_MINIMAL,
+                                lineterminator = '\n')
+
 
         if self.header_type == 'names': 
             hdr = [d[0].lower() for d in desc]
