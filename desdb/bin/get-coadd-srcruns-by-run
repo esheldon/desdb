@@ -1,0 +1,83 @@
+#!/usr/bin/python
+"""
+    %prog [options] coadd_run band
+
+Different from get-coadd-srclists-by-relead.  This just prints the
+source runs associated with the input coadd run and band
+
+If --byexp, print out the unique runs and exposurenames
+
+put your user name and password in ~/.netrc. Don't make it readable to anyone
+but yourself.  E.g.
+        machine {host} login {login} password {password}
+
+You do need to set the local and remote DES data directory roots as environment
+variables
+
+    $DESDATA
+    $DESREMOTE
+
+e.g.
+    export DESDATA=/astro/u/astrodat/data/desdata
+    export DESREMOTE=https://{host}/DESFiles/desardata
+
+If you are a DES member you can ask around to get a host name.
+"""
+
+import sys
+import os
+import desdb
+
+from optparse import OptionParser
+parser=OptionParser(__doc__)
+
+_default_project='OPS'
+
+parser.add_option('--project',
+                  default=_default_project,
+                  help="The DES 'project', default is %default")
+parser.add_option('--byexp',
+                  action='store_true',
+                  help="Print by exposurename")
+
+
+def print_by_run(cf):
+    d={}
+    for r in cf.srclist:
+        d[r['run']] = 3
+
+    for run in sorted(d):
+        print run
+
+def print_by_exp(cf):
+    d={}
+
+    for r in cf.srclist:
+        key='%s %s' % (r['run'], r['expname'])
+        d[key]=3
+
+    for k in sorted(d):
+        print k
+
+
+def main():
+    options,args = parser.parse_args(sys.argv[1:])
+
+    if len(args) < 2:
+        parser.print_help()
+        sys.exit(1)
+
+    coadd_run=args[0]
+    band=args[1]
+
+    cf=desdb.files.Coadd(run=coadd_run,
+                         band=band)
+
+    cf.load(srclist=True)
+
+    if options.byexp:
+        print_by_exp(cf)
+    else:
+        print_by_run(cf)
+                         
+main()

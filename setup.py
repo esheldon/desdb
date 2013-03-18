@@ -8,6 +8,7 @@ scripts= ['des-query',
           'des-red-expnames',
           'get-coadd-info-by-release',
           'get-coadd-srclists-by-release',
+          'get-coadd-srcruns-by-run',
           'get-release-filelist',
           'get-red-info-by-release',
           'get-release-runs']
