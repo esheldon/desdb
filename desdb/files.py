@@ -433,9 +433,11 @@ class Coadd(dict):
             i+=1
 
         if ftype != 'red':
-            raise ValueError("Reach itmax=%s before finding 'red' images. last is %s" % (itmax, ftype))
+            raise ValueError("Reach itmax=%s before finding 'red' "
+                             "images. last is %s" % (itmax, ftype))
 
-        if self.verbose: stderr.write("Found %d red images after %d iterations\n" % (len(idlist),i))
+        if self.verbose: stderr.write("Found %d red images after %d "
+                                      "iterations\n" % (len(idlist),i))
 
         query="""
         select 

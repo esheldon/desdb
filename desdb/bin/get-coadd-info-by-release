@@ -18,8 +18,9 @@ parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 parser.add_option("-b","--band",default=None, help="limit to the specified band.")
-parser.add_option("-f","--format",default='pyobj',help=("File format for output.  pyobj, json, cjson."
-                                                        "Default %default."))
+parser.add_option("-f","--format",default='pyobj',
+                  help=("File format for output.  pyobj, json, cjson."
+                        "Default %default."))
 
 def main():
 

@@ -1,0 +1,91 @@
+#!/usr/bin/python
+"""
+    %prog [options] run
+
+Download all or part of a "red" imaging run.
+
+put your user name and password in ~/.netrc. Don't make it readable to anyone
+but yourself.  E.g.
+        machine {host} login {login} password {password}
+
+You do need to set the local and remote DES data directory roots as environment
+variables
+
+    $DESDATA
+    $DESREMOTE
+
+e.g.
+    export DESDATA=/astro/u/astrodat/data/desdata
+    export DESREMOTE=https://{host}/DESFiles/desardata
+
+If you are a DES member you can ask around to get a host name.
+"""
+
+import sys
+import os
+import desdb
+
+from optparse import OptionParser
+parser=OptionParser(__doc__)
+
+_default_project='OPS'
+
+parser.add_option('--project',
+                  default=_default_project,
+                  help="The DES 'project', default is %default")
+
+parser.add_option("--clobber",action="store_true", 
+                  help=("download the files even if local copies exist and "
+                        "are no older than the remote versions"))
+
+parser.add_option("--debug",action="store_true", 
+                  help="print debugging messages")
+parser.add_option("--progress",action="store_true", 
+                  help="show detailed progress on each file")
+
+
+class CoaddDownloader(object):
+    def __init__(self, run, **keys):
+        self.run=run
+        self.project=keys.get('project',_default_project)
+        self.clobber=keys.get('clobber',False)
+
+        self.show_progress=keys.get('show_progress',False)
+        self.debug=keys.get('debug',False)
+
+        self._dfremote=desdb.files.DESFiles(fs='net')
+        self._dflocal=desdb.files.DESFiles()
+
+    def sync(self):
+        local_dir=self._dflocal.dir(type='coadd_run', 
+                                    project=self.project,
+                                    run=self.run)
+        remote_dir=self._dfremote.dir(type='coadd_run', 
+                                      project=self.project,
+                                      run=self.run)
+
+        syncer=desdb.sync.Synchronizer(remote_dir, local_dir, 
+                                       clobber=self.clobber,
+                                       show_progress=self.show_progress,
+                                       debug=self.debug,
+                                       use_netrc=True)
+        syncer.sync()
+
+
+
+def main():
+    options,args = parser.parse_args(sys.argv[1:])
+
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(1)
+
+    run=args[0]
+
+    d=CoaddDownloader(run, 
+                      clobber=options.clobber,
+                      debug=options.debug,
+                      show_progress=options.progress)
+    d.sync()
+
+main()
