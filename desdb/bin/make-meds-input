@@ -12,16 +12,6 @@ import desdb
 from optparse import OptionParser
 parser=OptionParser(__doc__)
 
-def print_by_exp(cf):
-    d={}
-
-    for r in cf.srclist:
-        key='%s %s' % (r['run'], r['expname'])
-        d[key]=3
-
-    for k in sorted(d):
-        print k
-
 
 def main():
     options,args = parser.parse_args(sys.argv[1:])
