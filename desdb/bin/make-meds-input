@@ -1,0 +1,56 @@
+#!/usr/bin/python
+"""
+    %prog [options] coadd_run band
+
+This is the list of red image files and background image files
+"""
+
+import sys
+import os
+import desdb
+
+from optparse import OptionParser
+parser=OptionParser(__doc__)
+
+def print_by_exp(cf):
+    d={}
+
+    for r in cf.srclist:
+        key='%s %s' % (r['run'], r['expname'])
+        d[key]=3
+
+    for k in sorted(d):
+        print k
+
+
+def main():
+    options,args = parser.parse_args(sys.argv[1:])
+
+    if len(args) < 2:
+        parser.print_help()
+        sys.exit(1)
+
+    coadd_run=args[0]
+    band=args[1]
+
+    cf=desdb.files.Coadd(run=coadd_run,
+                         band=band)
+
+    cf.load(srclist=True)
+
+    df=desdb.files.DESFiles()
+    input_file=df.url(type='meds_input',
+                      run=coadd_run,
+                      tilename=cf['tilename'],
+                      band=band)
+
+    d=os.path.dirname(input_file)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
+    print 'writing:',input_file
+    with open(input_file,'w') as fobj:
+        for r in cf.srclist:
+            fobj.write('%s %s\n' % (r['red_image'],r['red_bkg']))
+                         
+main()
