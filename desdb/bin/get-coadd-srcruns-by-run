@@ -2,10 +2,11 @@
 """
     %prog [options] coadd_run band
 
-Different from get-coadd-srclists-by-relead.  This just prints the
+Different from get-coadd-srclists-by-releas.  This just prints the
 source runs associated with the input coadd run and band
 
 If --byexp, print out the unique runs and exposurenames
+
 
 put your user name and password in ~/.netrc. Don't make it readable to anyone
 but yourself.  E.g.

@@ -150,7 +150,7 @@ class Red(dict):
                  id=None, 
                  expname=None,
                  ccd=None,
-                 dataset=None,
+                 release=None,
                  verbose=False, 
                  user=None, password=None,
                  conn=None):
@@ -160,17 +160,17 @@ class Red(dict):
         """
         if id is not None:
             self.method='id'
-        elif expname is not None and dataset is not None:
-            self.method='dataset-exp-ccd'
+        elif expname is not None and release is not None:
+            self.method='release-exp-ccd'
         else:
-            raise ValueError("send either id= or (expname= and ccd= and dataset=). "
+            raise ValueError("send either id= or (expname= and ccd= and release=). "
                              "-- Should add run=,expname=")
 
         self['image_id']=id
         self['cat_id'] = None
         self['expname'] = expname
         self['ccd'] = ccd
-        self['dataset']=dataset
+        self['release']=release
 
         self.verbose=verbose
 
@@ -184,7 +184,7 @@ class Red(dict):
         if self.method == 'id':
             self._get_info_by_id()
         else:
-            self._get_info_by_dataset()
+            self._get_info_by_release()
 
         df=DESFiles()
         self['image_url'] = df.url('red_image', 
@@ -223,7 +223,7 @@ class Red(dict):
             self[key] = res[0][key]
 
 
-    def _get_info_by_dataset(self):
+    def _get_info_by_release(self):
         query="""
         select
             im.id as image_id,
@@ -240,7 +240,7 @@ class Red(dict):
             and cat.file_exposure_name = '%(expname)s'
             and cat.ccd = %(ccd)s\n""" % {'expname':self['expname'],
                                           'ccd':self['ccd'],
-                                          'release':self['dataset']}
+                                          'release':self['release']}
 
         res=self.conn.quick(query,show=self.verbose)
         if len(res) != 1:
@@ -256,7 +256,7 @@ class Coadd(dict):
     def __init__(self, 
                  id=None, 
                  run=None, band=None, 
-                 dataset=None, tilename=None,
+                 release=None, tilename=None,
                  fs=None,
                  verbose=False, 
                  user=None, password=None,
@@ -267,7 +267,7 @@ class Coadd(dict):
         or
             c=Coadd(run=, band=)
         or
-            c=Coadd(dataset=, tilename=, band=)
+            c=Coadd(release=, tilename=, band=)
 
         The tilename can be inferred (at least for now) from the run
 
@@ -277,18 +277,19 @@ class Coadd(dict):
             self.method='id'
         elif run is not None and band is not None:
             self.method='runband'
-        elif (dataset is not None 
+        elif (release is not None 
               and tilename is not None 
               and band is not None):
-            self.method='dataset'
+            self.method='release'
         else:
-            raise ValueError("Send id= or (run=,band=) or (dataset=,tilename=,band=")
+            raise ValueError("Send id= or (run=,band=) or (release=,tilename=,"
+                             "band=")
 
         self['image_id'] = id
         self['cat_id']   = None
         self['run']      = run
         self['band']     = band
-        self['dataset']  = dataset
+        self['release']  = release
         self['tilename'] = tilename
 
         self.verbose=verbose
@@ -309,7 +310,7 @@ class Coadd(dict):
         elif self.method == 'runband':
             self._get_info_by_runband()
         else:
-            self._get_info_by_dataset()
+            self._get_info_by_release()
 
         df=DESFiles(fs=self.fs)
         self['image_url'] = df.url('coadd_image', 
@@ -369,7 +370,7 @@ class Coadd(dict):
         for key in res[0]:
             self[key] = res[0][key]
 
-    def _get_info_by_dataset(self):
+    def _get_info_by_release(self):
         query="""
         select
             im.id as image_id,
@@ -384,7 +385,7 @@ class Coadd(dict):
             and cat.tilename = '%(tile)s'
             and cat.band='%(band)s'\n""" % {'tile':self['tilename'],
                                             'band':self['band'],
-                                            'release':self['dataset']}
+                                            'release':self['release']}
 
         res=self.conn.quick(query,show=self.verbose)
         if len(res) != 1:
@@ -453,11 +454,12 @@ class Coadd(dict):
         df=DESFiles(fs=self.fs)
         srclist=[]
         for r in res:
-            url=df.url('red_image',
-                       run=r['run'],
-                       expname=r['expname'],
-                       ccd=r['ccd'])
-            r['url'] = url
+            for type in ['image','bkg','cat']:
+                url=df.url('red_image',
+                           run=r['run'],
+                           expname=r['expname'],
+                           ccd=r['ccd'])
+                r['red_'+type] = url
             srclist.append(r)
 
         self.srclist=srclist
@@ -563,7 +565,8 @@ _fs['red_run']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red',
                     'dir':         '$DESDATA/$DESPROJ/red/$RUN/red'}
 
 _fs['red_exp']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red/$EXPNAME',
-                    'dir':         '$DESDATA/$DESPROJ/red/$RUN/red/$EXPNAME'}
+                    'dir':       '$DESDATA/$DESPROJ/red/$RUN/red/$EXPNAME'}
+
 
 _fs['red_image'] = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
@@ -572,6 +575,10 @@ _fs['red_image'] = {'remote_dir':_fs['red_exp']['remote_dir'],
 _fs['red_cat']   = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_cat.fits'}
+_fs['red_bkg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
+                    'dir':       _fs['red_exp']['dir'], 
+                    'name':'$EXPNAME_$CCD_bkg.fits.fz'}
+
 
 _fs['coadd_run']   = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$RUN/coadd',
                       'dir':        '$DESDATA/$DESPROJ/coadd/$RUN/coadd'}
@@ -581,6 +588,11 @@ _fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
 _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':_fs['coadd_run']['dir'], 
                       'name':'$TILENAME_$BAND_cat.fits'}
+
+# run here is the coadd run
+_meds_dir='$DESDATA/meds/$RUN'
+_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds.fits'}
+_fs['meds_input'] = {'dir': _meds_dir,'name':'$TILENAME-$BAND-meds-input.dat'}
 
 def expand_desvars(string_in, **keys):
 
