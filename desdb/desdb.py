@@ -65,7 +65,8 @@ class Connection(cx_Oracle.Connection):
 
         if user is not None or password is not None:
             if user is None or password is None:
-                raise ValueError("Send either both or neither of user password")
+                raise ValueError("Send either both or neither of user "
+                                 "password")
         else:
             f=os.path.join( os.environ['HOME'], '.desdb_pass')
             if not os.path.exists(f):
@@ -73,7 +74,8 @@ class Connection(cx_Oracle.Connection):
 
             data=open(f).readlines()
             if len(data) != 2:
-                raise ValueError("Expected first line user second line pass in %s" % f)
+                raise ValueError("Expected first line user second line "
+                                 "pass in %s" % f)
             user=data[0].strip()
             password=data[1].strip()
 
@@ -91,7 +93,8 @@ class Connection(cx_Oracle.Connection):
 
         return '\n'.join(rep)
 
-    def quick(self, query, lists=False, strings=False, array=False, show=False):
+    def quick(self, query, lists=False, strings=False, array=False,
+              show=False):
         """
         Execute the query and return the result.
 
@@ -135,7 +138,8 @@ class Connection(cx_Oracle.Connection):
         curs.close()
         return res
 
-    def quickWrite(self, query, fmt='csv', header='names', file=sys.stdout, show=False):
+    def quickWrite(self, query, fmt='csv', header='names',
+                   file=sys.stdout, show=False):
         """
         Execute the query and print the results.
 
@@ -454,7 +458,8 @@ class ObjWriter:
             self.write_pyobj(data)
         else:
             raise ValueError("bad format %s. Only support "
-                             "csv,json,cjson,pretty,pyobj writing for now" % self.fmt)
+                             "csv,json,cjson,pretty,pyobj "
+                             "writing for now" % self.fmt)
 
     def write_json(self, data):
         write_json(data, self.fmt)
@@ -561,3 +566,67 @@ def center_text(text, width, spacer=' '):
     return spacer*(space/2) + text + spacer*(space/2 + space%2)
 
 
+class PasswordGetter:
+    """
+    Try to get username/password from different sources.
+
+    The types to try are listed in the types= keyword as a list.
+    Defaults to only trying netrc
+
+    Allowed types are
+        'netrc','desservices','desdb_pass' (deprecated)
+
+    netrc is much more general, as it can be used for any url.
+    desservices is only used for the database connection.
+    """
+    def __init__(self, types=['netrc','desservices']):
+
+        self.types=types
+        
+        self.type=None
+        self.password=None
+        self.user=None
+        for type in types:
+            if self._set_username_password(type):
+                self.type=type
+                break
+
+    def _set_username_password(self, type):
+        gotit=False
+        if type=='netrc':
+            gotit=self._try_netrc()
+        elif type=='desservices':
+            gotit=self._try_desservices(fname)
+        elif type=='desdb_pass':
+            gotit=self._try_desdb_pass(fname)
+        else:
+            raise ValueError("expected type 'netrc' or "
+                             "'desservices' or 'desdb_pass'")
+
+        return gotit
+
+    def _try_netrc(self):
+        res=netrc.netrc().authenticators(self.host)
+
+        if res is None:
+            # no authentication is needed for this host
+            return False
+
+        (user,account,passwd) = res
+        self.user=user
+        self.password=passwd
+
+        return True
+
+    def _try_desservices(self):
+        fname=os.path.expanduser('~/.desservices')
+        if not os.path.exists(fname):
+            return False
+
+        config = ConfigParser.ConfigParser()
+        config.read(fname)
+        self.user=config.get('desdb', 'user')
+        self.password=config.get('desdb', 'passwd')
+
+    def _try_desdb_pass(self):
+        fname=os.path.expanduser('~/.desdb_pass')

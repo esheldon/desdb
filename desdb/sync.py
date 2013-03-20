@@ -59,7 +59,8 @@ class URLLister(object):
             authinfo=self._get_netrc_auth()
 
         if authinfo is not None:
-            opener = urllib2.build_opener(urllib2.ProxyBasicAuthHandler,authinfo)
+            opener = urllib2.build_opener(urllib2.ProxyBasicAuthHandler,
+                                          authinfo)
         else:
             opener = urllib2.build_opener(urllib2.ProxyBasicAuthHandler)
 

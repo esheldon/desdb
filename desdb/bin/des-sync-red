@@ -8,8 +8,8 @@ put your user name and password in ~/.netrc. Don't make it readable to anyone
 but yourself.  E.g.
         machine {host} login {login} password {password}
 
-You do need to set the local and remote DES data directory roots as environment
-variables
+You do need to set the local and remote DES data directory roots as
+environment variables
 
     $DESDATA
     $DESREMOTE

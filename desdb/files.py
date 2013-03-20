@@ -344,6 +344,9 @@ class Coadd(dict):
 
         res=self.conn.quick(query,show=self.verbose)
 
+        if len(res) > 1:
+            vals=(len(res),self['run'],self['band'])
+            raise ValueError("got %d entries for run=%s band=%s" % vals)
         for key in res[0]:
             self[key] = res[0][key]
 
@@ -455,11 +458,12 @@ class Coadd(dict):
         srclist=[]
         for r in res:
             for type in ['image','bkg','cat']:
-                url=df.url('red_image',
+                ftype='red_%s' % type
+                url=df.url(ftype,
                            run=r['run'],
                            expname=r['expname'],
                            ccd=r['ccd'])
-                r['red_'+type] = url
+                r[ftype] = url
             srclist.append(r)
 
         self.srclist=srclist
@@ -591,8 +595,11 @@ _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
 
 # run here is the coadd run
 _meds_dir='$DESDATA/meds/$RUN'
+_meds_script_dir='$DESDATA/meds/scripts/$RUN'
 _fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds.fits'}
 _fs['meds_input'] = {'dir': _meds_dir,'name':'$TILENAME-$BAND-meds-input.dat'}
+_fs['meds_script'] = {'dir':_meds_script_dir,
+                      'name':'$TILENAME-$BAND-make-cutouts.sh'}
 
 def expand_desvars(string_in, **keys):
 
@@ -649,10 +656,10 @@ def expand_desvars(string_in, **keys):
 
 
     if string.find('$TILENAME') != -1:
-        run=keys.get('tilename', None)
-        if run is None:
-            raise ValueError("run keyword must be sent: '%s'" % string_in)
-        string = string.replace('$TILENAME', str(run))
+        tilename=keys.get('tilename', None)
+        if tilename is None:
+            raise ValueError("tilename keyword must be sent: '%s'" % string_in)
+        string = string.replace('$TILENAME', str(tilename))
 
 
 
