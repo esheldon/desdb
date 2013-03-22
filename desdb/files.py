@@ -79,7 +79,9 @@ def get_expnames_by_release(release, band, show=False,
     return expnames
 
 def get_red_info_by_release(release, band, 
-                            user=None,password=None,
+                            user=None,
+                            password=None,
+                            host=None,
                             desdata=None,
                             show=True,
                             doprint=False, fmt='json'):
@@ -113,7 +115,7 @@ def get_red_info_by_release(release, band,
     if desdata is not None:
         query=query.replace('$DESDATA',desdata)
 
-    conn=desdb.Connection(user=user,password=password)
+    conn=desdb.Connection(user=user,password=password,host=host)
     if doprint:
         conn.quickWrite(query,fmt=fmt,show=show)
     else:
@@ -259,7 +261,7 @@ class Coadd(dict):
                  release=None, tilename=None,
                  fs=None,
                  verbose=False, 
-                 user=None, password=None,
+                 user=None, password=None,host=None,
                  conn=None):
         """
         Construct either with
@@ -299,7 +301,7 @@ class Coadd(dict):
 
 
         if conn is None:
-            self.conn=desdb.Connection(user=user,password=password)
+            self.conn=desdb.Connection(user=user,password=password,host=host)
         else:
             self.conn=conn
 
@@ -594,10 +596,13 @@ _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'name':'$TILENAME_$BAND_cat.fits'}
 
 # run here is the coadd run
-_meds_dir='$DESDATA/meds/$RUN'
-_meds_script_dir='$DESDATA/meds/scripts/$RUN'
+_meds_dir='$DESDATA/meds/$MEDSCONF/$RUN'
+_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$RUN'
 _fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds.fits'}
-_fs['meds_input'] = {'dir': _meds_dir,'name':'$TILENAME-$BAND-meds-input.dat'}
+_fs['meds_input'] = {'dir': _meds_dir,
+                     'name':'$TILENAME-$BAND-meds-input.dat'}
+_fs['meds_srclist'] = {'dir': _meds_dir,
+                       'name':'$TILENAME-$BAND-meds-srclist.dat'}
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-make-cutouts.sh'}
 
@@ -660,6 +665,13 @@ def expand_desvars(string_in, **keys):
         if tilename is None:
             raise ValueError("tilename keyword must be sent: '%s'" % string_in)
         string = string.replace('$TILENAME', str(tilename))
+
+    if string.find('$MEDSCONF') != -1:
+        medsconf=keys.get('medsconf', None)
+        if medsconf is None:
+            raise ValueError("medsconf keyword must be sent: '%s'" % string_in)
+        string = string.replace('$MEDSCONF', str(medsconf))
+
 
 
 

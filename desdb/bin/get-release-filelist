@@ -27,6 +27,8 @@ from optparse import OptionParser
 parser=OptionParser(__doc__)
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
+parser.add_option("--host",default=None, help="over-ride default host")
+
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 parser.add_option("--url",action='store_true', 
                   help="Print remote url and local path in two columns.")
@@ -76,7 +78,9 @@ def main():
     if not options.noexpand:
         query=os.path.expandvars(query)
 
-    conn=desdb.Connection(user=options.user,password=options.password)
+    conn=desdb.Connection(user=options.user,
+                          password=options.password,
+                          host=options.host)
     res=conn.quick(query,show=options.show)
 
     for r in res:

@@ -44,8 +44,8 @@ class Connection(cx_Oracle.Connection):
 
     Simplifies access to DES db.
 
-    methods
-    -------
+    methods in addition to those for the cx_oracle connection object
+    ----------------------------------------------------------------
 
     quick:
         Execute the query and return the results.
@@ -60,38 +60,30 @@ class Connection(cx_Oracle.Connection):
     list_tables:
         List all available tables, as available in the all_tables table.
     """
-    def __init__(self, user=None, password=None, host=_defhost,
-                 port=_defport, dbname=_defdb):
+    def __init__(self, **keys):
+        """
+        parameters
+        ----------
+        user: optional
+            Username. By default gotten from netrc
+        password: optional
+            Password. By default gotten from netrc
+        host: optional
+            over-ride the default host
+        port: optional
+            over-ride the default port
+        dbname: optional
+            over-ride the default database name
+        """
+        p=PasswordGetter(**keys)
+        self._pwd_getter=p
 
-        if user is not None or password is not None:
-            if user is None or password is None:
-                raise ValueError("Send either both or neither of user "
-                                 "password")
-        else:
-            f=os.path.join( os.environ['HOME'], '.desdb_pass')
-            if not os.path.exists(f):
-                raise ValueError("Send user=,password= or create %s" % f)
+        self._process_pars(**keys)
 
-            data=open(f).readlines()
-            if len(data) != 2:
-                raise ValueError("Expected first line user second line "
-                                 "pass in %s" % f)
-            user=data[0].strip()
-            password=data[1].strip()
+        url = _url_template % (p.host, self._port, self._dbname)
 
-        self._host=host
-        self._port=port
-        self._dbname=dbname
-        url = _url_template % (self._host, self._port, self._dbname)
+        cx_Oracle.Connection.__init__(self,p.user,p.password,url)
 
-        cx_Oracle.Connection.__init__(self,user,password,url)
-
-    def __repr__(self):
-        rep=["DESDB Connection"]
-        indent=' '*4
-        rep.append("%s%s@%s" % (indent,self.username,self.dsn))
-
-        return '\n'.join(rep)
 
     def quick(self, query, lists=False, strings=False, array=False,
               show=False):
@@ -242,7 +234,21 @@ class Connection(cx_Oracle.Connection):
 
         curs.close()
 
+    def _process_pars(self, **keys):
+        self._port=keys.get('port',_defport)
+        if self._port is None: self._port=_defport
 
+        self._dbname=keys.get('dbname',_defdb)
+        if self._dbname is None: self._dbname=_defdb
+
+
+    def __repr__(self):
+        rep=["DESDB Connection"]
+        indent=' '*4
+        p=self._pwd_getter
+        rep.append("%s%s@%s" % (indent,p.user,p.host))
+
+        return '\n'.join(rep)
 
 
 def cursor2dictlist(curs, lower=True):
@@ -570,63 +576,109 @@ class PasswordGetter:
     """
     Try to get username/password from different sources.
 
+    First there are the keywords user=, password= which take precedence.
+
     The types to try are listed in the types= keyword as a list.
     Defaults to only trying netrc
 
     Allowed types are
-        'netrc','desservices','desdb_pass' (deprecated)
+        'netrc' or 'desdb_pass' (deprecated)
 
     netrc is much more general, as it can be used for any url.
-    desservices is only used for the database connection.
     """
-    def __init__(self, types=['netrc','desservices']):
+    def __init__(self, user=None, password=None, host=_defhost,
+                 types=['netrc','desdb_pass']):
 
-        self.types=types
+        self._host=host
+        if self._host is None:
+            self._host=_defhost
+
+        self._types=types
+        self._type=None
+        self._password=None
+        self._user=None
+
+        if user is not None or password is not None:
+            self._try_keywords(user=user, password=password)
+            return
         
-        self.type=None
-        self.password=None
-        self.user=None
         for type in types:
             if self._set_username_password(type):
-                self.type=type
+                self._type=type
                 break
+
+        if self._user==None:
+            raise ValueError("could not determine "
+                             "username/password for host '%s'" % self._host)
+
+    @property
+    def user(self):
+        return self._user
+    @property
+    def password(self):
+        return self._password
+    @property
+    def type(self):
+        return self._type
+    @property
+    def host(self):
+        return self._host
+
+
 
     def _set_username_password(self, type):
         gotit=False
         if type=='netrc':
             gotit=self._try_netrc()
-        elif type=='desservices':
-            gotit=self._try_desservices(fname)
         elif type=='desdb_pass':
-            gotit=self._try_desdb_pass(fname)
+            gotit=self._try_desdb_pass()
         else:
-            raise ValueError("expected type 'netrc' or "
-                             "'desservices' or 'desdb_pass'")
+            raise ValueError("expected type 'netrc' or 'desdb_pass'")
 
         return gotit
 
     def _try_netrc(self):
-        res=netrc.netrc().authenticators(self.host)
+        import netrc
+        res=netrc.netrc().authenticators(self._host)
 
         if res is None:
             # no authentication is needed for this host
             return False
 
         (user,account,passwd) = res
-        self.user=user
-        self.password=passwd
+        self._user=user
+        self._password=passwd
 
         return True
 
-    def _try_desservices(self):
-        fname=os.path.expanduser('~/.desservices')
+    def _try_keywords(self, user=None, password=None):
+        if user is None or password is None:
+            raise ValueError("Send either both or neither of user "
+                             "password")
+
+        self._user=user
+        self._password=password
+        self._type='keyword'
+
+
+    def _try_desdb_pass(self):
+        """
+        Old deprecated way
+        """
+        fname=os.path.join( os.environ['HOME'], '.desdb_pass')
         if not os.path.exists(fname):
             return False
 
-        config = ConfigParser.ConfigParser()
-        config.read(fname)
-        self.user=config.get('desdb', 'user')
-        self.password=config.get('desdb', 'passwd')
+        with open(fname) as fobj:
+            data=fobj.readlines()
+            if len(data) != 2:
+                raise ValueError("Expected first line user second line "
+                                 "pass in %s" % fname)
+            self._user=data[0].strip()
+            self._password=data[1].strip()
 
-    def _try_desdb_pass(self):
-        fname=os.path.expanduser('~/.desdb_pass')
+        return True
+
+
+
+

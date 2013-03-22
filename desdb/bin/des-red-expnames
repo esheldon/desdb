@@ -13,6 +13,12 @@ from optparse import OptionParser
 parser=OptionParser(__doc__)
 parser.add_option('--exptime',default=None,
                   help="ensure exptime > this value, default %default")
+
+parser.add_option("-u","--user",default=None, help="Username.")
+parser.add_option("-p","--password",default=None, help="Password.")
+parser.add_option("--host",default=None, help="over-ride default host")
+
+
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 
 def main():
@@ -44,7 +50,9 @@ def main():
     if options.show:
         print >>stderr,query
 
-    conn=desdb.Connection()
+    conn=desdb.Connection(user=options.user,
+                          password=options.password,
+                          host=options.host)
     res=conn.quick(query)
     if len(res)==0:
         return

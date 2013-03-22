@@ -41,6 +41,11 @@ parser.add_option('--byexp',
                   action='store_true',
                   help="Print by exposurename")
 
+parser.add_option("-u","--user",default=None, help="Username.")
+parser.add_option("-p","--password",default=None, help="Password.")
+parser.add_option("--host",default=None, help="over-ride default host")
+
+
 
 def print_by_run(cf):
     d={}
@@ -72,7 +77,10 @@ def main():
     band=args[1]
 
     cf=desdb.files.Coadd(run=coadd_run,
-                         band=band)
+                         band=band,
+                         user=options.user,
+                         password=options.password,
+                         host=options.host)
 
     cf.load(srclist=True)
 
