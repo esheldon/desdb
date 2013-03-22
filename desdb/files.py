@@ -257,11 +257,15 @@ class Red(dict):
 class Coadd(dict):
     def __init__(self, 
                  id=None, 
-                 run=None, band=None, 
-                 release=None, tilename=None,
+                 run=None,
+                 band=None, 
+                 release=None,
+                 tilename=None,
                  fs=None,
                  verbose=False, 
-                 user=None, password=None,host=None,
+                 user=None,
+                 password=None,
+                 host=None,
                  conn=None):
         """
         Construct either with

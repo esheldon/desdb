@@ -2,10 +2,10 @@
 """
     %prog [options] release
 
-Look up all coadd images for the requested release, find the
-single epoch 'red' images that were used as input, and write out a json file
-with the coadd and red image info.  The json file is keyed by coadd_id.
-Release is something like 'dr012'
+Look up all coadd images for the requested release, find the single epoch 'red'
+images that were used as input, and write out a json file with the coadd and
+red image info.  The json file is keyed by coadd_id.  Release is something like
+'dr012'
 
 Because the json file can't be written until the end, the results are also
 written to stderr along the way to show progress.
@@ -64,7 +64,7 @@ def main():
     output={}
     for cdict in res:
         coadd_id = cdict['image_id']
-        c=desdb.files.Coadd(id=coadd_id,expandroot=False)
+        c=desdb.files.Coadd(id=coadd_id)
         c.load(srclist=True)
         thisone={'coadd_id':coadd_id,
                  'release':release,
@@ -77,12 +77,13 @@ def main():
         output[coadd_id] = thisone
 
         for r in c.srclist:
-            stderr.write('%d %s %s\n' % (coadd_id,r['id'],r['path']))
+            stderr.write('%d %s %s\n' % (coadd_id,r['id'],r['red_image']))
 
     dlw.write(output)
 
     return
 
+    '''
     output={}
 
     for cdict in res:
@@ -169,7 +170,7 @@ def main():
     else:
         import pprint
         pprint.pprint(output)
-
+    '''
 
 if __name__=="__main__":
     main()
