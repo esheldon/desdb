@@ -607,8 +607,15 @@ _fs['meds_input'] = {'dir': _meds_dir,
                      'name':'$TILENAME-$BAND-meds-input.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
                        'name':'$TILENAME-$BAND-meds-srclist.dat'}
+_fs['meds_status'] = {'dir':_meds_dir,
+                      'name':'$TILENAME-$BAND-meds.yaml'}
+
 _fs['meds_script'] = {'dir':_meds_script_dir,
-                      'name':'$TILENAME-$BAND-make-cutouts.sh'}
+                      'name':'$TILENAME-$BAND-meds.sh'}
+_fs['meds_log'] = {'dir':_meds_script_dir,
+                   'name':'$TILENAME-$BAND-meds.log'}
+_fs['meds_pbs'] = {'dir':_meds_script_dir,
+                   'name':'$TILENAME-$BAND-meds.pbs'}
 
 def expand_desvars(string_in, **keys):
 
