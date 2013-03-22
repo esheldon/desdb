@@ -18,8 +18,8 @@ can send queries on standard input or via the -q option
     cat file | des-query
 
 By default the format is csv.  You can control this withthe -f/--format option.
-Possibilities are csv,json,pretty,pyobj.  pretty is a formatted in nicely for
-viewing but is not good for machine reading.  pyobj can be read from python
+Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted in nicely
+for viewing but is not good for machine reading.  pyobj can be read from python
 using eval
 
 examples
@@ -31,38 +31,43 @@ examples
 
     des-query -f json < sql_file > output.json
 
+    # list all the tables
+    des-query -l
+
+    # describe a table
+    des-query -d coadd_objects
+
 Pre-fab queries
 ---------------
 
 There are some scripts with pre-defined queries.  After installation these
-will be in your path.
+will be in your path (there may be more than listed here)
 
-* get-table-info: Print the column names,typecode,typename,precision,scale,value
-    for the input table.
-* get-release-runs: Print all runs for input release and file type.
-* get-red-info: Look up all red catalogs and images in the input release
-    and write out their file ids, path info, and external url.
-* get-coadd-info: Look up all coadd images in the input release and write out their file ids,
-    along with some other info.
-* get-coadd-srclists: Look up all coadd images for the requested release, find the
-    single epoch 'red' images that were used as input, and write out a json file
-    with the coadd and red image info.  The json file is keyed by coadd_id.
-* get-filelist: Look up the listed file types and write out their local path information.  The
-    types should be a comma separated list.
+run based queries
+* des-red-expnames: Print the exposurenames for the given "red" run
+* get-coadd-srcruns-by-run: list the input source "red" runs that were
+  used to make the indicated coadd
+
+release based queries (e.g. dr012)
+* get-coadd-info-by-release: get allthe coadd info for the release
+* get-coadd-srclists-by-release: list all red images and catalogs that
+  went into all coadds for the indicated release
+* get-red-info-by-release: Look up all red catalogs and images in the 
+  input release and write out their file ids, path info, and external url.
+* get-release-filelist: Look up the listed file types and write out their 
+  local path information.
+* get-release-runs: list all runs for the indicated file types in the
+  indicated release
 
 Downloading Data
 ----------------
 
-There are scripts to download files using wget.  After installation these
-will be in your path.
+There are scripts to sync files using curl.  After installation these will be
+in your path.
 
 
-* wget-des: download files from the des web site.
-* wget-des-parallel: download files in parallel
-    Requires the "parallel" program. http://www.gnu.org/software/parallel/
-
-    The parallelization occurs across DES runs, for example if you want
-    to download multiple "red" runs you can use this script.
+* des-sync-red: download red images and catalogs
+* des-sync-coadd: download coadd images and catalogs
 
 Note you need the DESDATA environment variable set to the location of your DES
 data locally.  You need the DESREMOTE set to the remote directory (see the DES
@@ -114,13 +119,13 @@ Preparation
 -----------
 
 You can send your username and password via -u/--user and -p/--password, but it
-is easier to use the password file.  Put your des database username and
-password in a file ~/.desdb_pass
+is easier to use a netrc file.
 
-    username
-    pass
+    machine {dbmachine}.ncsa.uiuc.edu login {login} password {pass}
 
-And make sure the file is not readable or writable by others
+Where items in {} are things you need to fill in.  The dbmachine is the name of
+the DES database host. And make sure the file is not readable or writable by
+others
 
     chmod go-rw ~/.desdb_pass
 
@@ -142,7 +147,8 @@ To install under a particular prefix
 
 For file downloads you only need this package and curl.
 
-For database queries, you must first install the oracle libraries and the
+
+For database queries, you need to install the oracle libraries and the
 cx_Oracle python library.  For linux you can download and install the default
 versions if you want, or use the bundles listed below.  However, the official
 version of cx_Oracle for OSX is broken on recent versions of the operating
@@ -161,8 +167,8 @@ cd into the directory and run
 
     ./do-install $dir
 
-Where $dir is the location you want the install; this can be anywhere.
-Then source the setup file appropriate for your shell.
+Where $dir is the full path to the location you want the install; this can be
+anywhere.  Then source the setup file appropriate for your shell.
 
     source $dir/setup.sh   # for bash
     source $dir/setup.csh  # for csh/tcsh
