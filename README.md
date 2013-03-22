@@ -1,28 +1,38 @@
 desdb
 =====
 
-DES file locations and database access
+DES files and database access
 
-Note this package is in flux at the moment as things change in DESDM.
-Also, we are moving to using ~/.netrc for authentication for the file
-downloads.
+Note this package is in flux at the moment as things change in DESDM.  Also, we
+have moved to using ~/.netrc for authentication for both database access and
+file downloads.
 
-Generic Queries
----------------
+Connection Class
+------------------
 
-After installation, the script des-query will be in your path.  You
-can send queries on standard input or via the -q option
+In the sub-module "desdb" we define the Connection class, which inherits from
+the cx_Oracle connection.  We also provide scripts that that use this class
+for database queries.
+
+Generic Query Script
+--------------------
+
+After installation, the script des-query will be in your path.  You can send
+queries on standard input or via the -q option
 
     des-query -q query
     des-query < file
     cat file | des-query
 
-By default the format is csv.  You can control this withthe -f/--format option.
-Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted in nicely
-for viewing but is not good for machine reading.  pyobj can be read from python
-using eval
+By default the format is csv.  You can control this with the -f/--format
+option.  Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted
+in nicely for viewing but is not good for machine reading.  pyobj can be read
+from python using eval
 
 examples
+
+    # Get some object data
+    des-query -q "select xwin_image_r,ywin_image_r from coadd_objects where rownum < 10"
 
     # Get the runs associated with release "dr012" and files of type "red"
     des-query -q "select distinct(run) from dr012_files where filetype='red'"
@@ -108,12 +118,6 @@ https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access)
 
 Other classes of interest are the Red and Coadd classes for dealing with those
 file types.
-
-Connection Class
-------------------
-In the sub-module "desdb" we define the Connection class, which inherits from
-the cx_Oracle connection.  See the scripts above for examples of how
-to use this class.
 
 Preparation
 -----------
