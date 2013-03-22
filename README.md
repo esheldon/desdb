@@ -128,8 +128,8 @@ is easier to use a netrc file.
     machine dbmachine.ncsa.uiuc.edu login your_username password your_password
 
 The "dbmachine" should be replace by the actual the DES database host, and
-"your_username" etc should be replaced with your login info. And make sure the
-file is not readable or writable by others.
+"your_username" and "your_password" should be replaced with your login info.
+And make sure the file is not readable or writable by others.
 
     chmod go-rw ~/.desdb_pass
 
