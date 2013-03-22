@@ -637,8 +637,23 @@ class PasswordGetter:
 
         return gotit
 
+    def _check_perms(self,fname):
+        import stat
+        fname=os.path.expanduser(fname)
+        with open(fname) as fobj:
+            prop = os.fstat(fobj.fileno())
+            if prop.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+                raise IOError("file has incorrect mode: %s" % fname)
+
     def _try_netrc(self):
         import netrc
+
+        fname = os.path.join(os.environ['HOME'], ".netrc")
+        if not os.path.exists(fname):
+            return False
+
+        self._check_perms(fname)
+
         res=netrc.netrc().authenticators(self._host)
 
         if res is None:
@@ -668,6 +683,8 @@ class PasswordGetter:
         fname=os.path.join( os.environ['HOME'], '.desdb_pass')
         if not os.path.exists(fname):
             return False
+
+        self._check_perms(fname)
 
         with open(fname) as fobj:
             data=fobj.readlines()
