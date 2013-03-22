@@ -644,7 +644,7 @@ class PasswordGetter:
             prop = os.fstat(fobj.fileno())
             if prop.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
                 err=("file has incorrect mode.  On UNIX use\n"
-                     "    chmod go-r %s" % fname)
+                     "    chmod go-rw %s" % fname)
                 raise IOError(err)
 
     def _try_netrc(self):
