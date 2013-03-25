@@ -599,16 +599,19 @@ _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':_fs['coadd_run']['dir'], 
                       'name':'$TILENAME_$BAND_cat.fits'}
 
-# run here is the coadd run
-_meds_dir='$DESDATA/meds/$MEDSCONF/$RUN'
-_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$RUN'
+# Multi Epoch Data Structure files
+# need to put medsconf in name.
+# or we should have a run based system?  The input coadd run set
+# will be changing constantly
+_meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
+_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
 _fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds.fits'}
 _fs['meds_input'] = {'dir': _meds_dir,
                      'name':'$TILENAME-$BAND-meds-input.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
                        'name':'$TILENAME-$BAND-meds-srclist.dat'}
 _fs['meds_status'] = {'dir':_meds_dir,
-                      'name':'$TILENAME-$BAND-meds.yaml'}
+                      'name':'$TILENAME-$BAND-meds-status.yaml'}
 
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-meds.sh'}
@@ -616,6 +619,20 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
+
+# outputs from any weak lensing pipeline
+_fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
+_fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
+_fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
+_fs['wlpipe_coadd_run'] = {'dir': _fs['wlpipe_run']['dir']+'/$COADD_RUN'}
+
+# SE files by exposure name
+_fs['wlpipe_se'] = {'dir': _fs['wlpipe_exp']['dir'],
+                    'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT}
+
+# ME files by tilename and band
+_fs['wlpipe_me'] = {'dir': _fs['wlpipe_exp']['dir'],
+                    'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT}
 
 def expand_desvars(string_in, **keys):
 
