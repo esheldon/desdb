@@ -1,4 +1,5 @@
 import sys
+from sys import stderr
 import os
 import tempfile
 
@@ -140,7 +141,7 @@ class Synchronizer(object):
             cmd=self._get_curl_command(url, local_path, tmp_path, local_exists)
 
             if self.debug:
-                print cmd
+                print >>stderr,cmd
 
             self._run_curl(cmd)
 
@@ -159,7 +160,11 @@ class Synchronizer(object):
     def _run_curl(self, cmd):
         res=os.system(cmd)
         if res != 0:
-            raise RuntimeError("Got curl error: %d" % res)
+            mess="""
+Got curl error: %s
+Command was %s
+            """ % (res,cmd)
+            raise RuntimeError(mess)
 
     def _move_from_tmp(self, local_path, tmp_path):
         if os.path.exists(local_path):

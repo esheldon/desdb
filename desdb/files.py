@@ -7,6 +7,12 @@ except:
     # this is usually because the oracle libraries are not installed
     pass
 
+# my own run lists until official releases come
+_adhoc_release_map={'sve01':{'run_exp_file':
+                             '/global/project/projectdirs/des/wl/desdata/sync/2013-03-20/coadd-se-run-exp.txt'}}
+
+SKIP_CCD=61
+
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
 
@@ -45,6 +51,10 @@ def get_scratch_dir():
         raise ValueError("The DES_SCRATCH environment variable is not set")
     return os.environ['DES_SCRATCH']
 
+
+def get_dir(type, **keys):
+    df=DESFiles(**keys)
+    return df.dir(type, **keys)
 def get_url(type, **keys):
     df=DESFiles(**keys)
     return df.url(type, **keys)
@@ -78,13 +88,127 @@ def get_expnames_by_release(release, band, show=False,
     curs.close()
     return expnames
 
+def get_red_info_by_run_exp(runlist, explist,
+                            user=None,
+                            password=None,
+                            host=None,
+                            desdata=None,
+                            doprint=False,
+                            fmt='json',
+                            asdict=False):
+    """
+    runlist and explist are paired
+    """
+
+    conn=desdb.Connection(user=user,password=password,host=host)
+
+    dlist=[]
+
+    for run,expname in zip(runlist,explist):
+
+        query="""
+        select
+            '$DESDATA/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+            loc.exposurename as expname,
+            loc.band,
+            image.ccd,
+            image.id as image_id
+        from
+            image, location loc
+        where
+            image.run = '%(run)s'
+            and loc.exposurename = '%(expname)s'
+            and loc.id=image.id
+            and image.imagetype='red'
+            and image.ccd != 61\n"""
+
+        query=query % {'run':run,'expname':expname}
+
+        if desdata is not None:
+            query=query.replace('$DESDATA',desdata)
+
+        data=conn.quick(query)
+
+        dlist += data
+
+    return dlist
+
+
+def get_red_info_by_runlist(runlist, 
+                            user=None,
+                            password=None,
+                            host=None,
+                            desdata=None,
+                            show=True,
+                            doprint=False,
+                            fmt='json',
+                            asdict=False):
+    """
+    Get all image and cat info for the input list of runs
+    """
+
+    conn=desdb.Connection(user=user,password=password,host=host)
+
+    runcsv = ','.join(runlist)
+    runcsv = ["'%s'" % r for r in runlist]
+    runcsv = ','.join(runcsv)
+
+    query="""
+    select
+        '$DESDATA/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+        loc.exposurename as expname,
+        loc.band,
+        image.ccd,
+        image.id as image_id
+    from
+        image, location loc
+    where
+        image.run in (%(runcsv)s)
+        and loc.id=image.id
+        and image.imagetype='red'
+        and image.ccd != 61\n"""
+
+    query=query % {'runcsv':runcsv}
+
+    if desdata is not None:
+        query=query.replace('$DESDATA',desdata)
+
+    if doprint:
+        conn.quickWrite(query,fmt=fmt,show=show)
+    else:
+        data=conn.quick(query,show=show)
+        return data
+
+def _read_runexp(fname):
+    runlist=[]
+    explist=[]
+    with open(fname) as fobj:
+        for line in fobj:
+            ls=line.split()
+            runlist.append(ls[0])
+            explist.append(ls[1])
+    return runlist,explist
+
 def get_red_info_by_release(release, band, 
                             user=None,
                             password=None,
                             host=None,
                             desdata=None,
                             show=True,
-                            doprint=False, fmt='json'):
+                            doprint=False,
+                            fmt='json',
+                            asdict=False):
+
+    if release in _adhoc_release_map:
+        fname=_adhoc_release_map[release]['run_exp_file']
+        runlist,explist=_read_runexp(fname)
+        return get_red_info_by_run_exp(runlist, explist,
+                                       user=user,
+                                       password=password,
+                                       host=host,
+                                       desdata=desdata,
+                                       asdict=asdict)
+
 
     net_rootdir=get_des_rootdir(fs='net')
 
@@ -487,9 +611,11 @@ class DESFiles:
     fs: string, optional
         The file system.  Default is DES_DEFAULT_FS
     """
-    def __init__(self, fs=None):
-        if fs is None:
+    def __init__(self, **keys):
+        if 'fs' not in keys:
             fs=get_default_fs()
+        else:
+            fs=keys['fs']
         self.fs = fs
         self._root=get_des_rootdir(fs=self.fs)
 
@@ -603,15 +729,16 @@ _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
 # need to put medsconf in name.
 # or we should have a run based system?  The input coadd run set
 # will be changing constantly
+
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
 _meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
-_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds.fits'}
+_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits'}
 _fs['meds_input'] = {'dir': _meds_dir,
-                     'name':'$TILENAME-$BAND-meds-input.dat'}
+                     'name':'$TILENAME-$BAND-meds-input-$MEDSCONF.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
-                       'name':'$TILENAME-$BAND-meds-srclist.dat'}
+                       'name':'$TILENAME-$BAND-meds-srclist-$MEDSCONF.dat'}
 _fs['meds_status'] = {'dir':_meds_dir,
-                      'name':'$TILENAME-$BAND-meds-status.yaml'}
+                      'name':'$TILENAME-$BAND-meds-status-$MEDSCONF.yaml'}
 
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-meds.sh'}
@@ -620,19 +747,24 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
 
+#
 # outputs from any weak lensing pipeline
+#
+# these are not used (or finished) yet
+
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
-_fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
-_fs['wlpipe_coadd_run'] = {'dir': _fs['wlpipe_run']['dir']+'/$COADD_RUN'}
+
 
 # SE files by exposure name
+_fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
 _fs['wlpipe_se'] = {'dir': _fs['wlpipe_exp']['dir'],
-                    'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT}
+                    'name': '$EXPNAME-$CCD-$RUN-$FILETYPE.$EXT'}
 
 # ME files by tilename and band
-_fs['wlpipe_me'] = {'dir': _fs['wlpipe_exp']['dir'],
-                    'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT}
+_fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
+_fs['wlpipe_me'] = {'dir': _fs['wlpipe_tile']['dir'],
+                    'name': '$TILENAME-$BAND-$RUN-$FILETYPE.$EXT'}
 
 def expand_desvars(string_in, **keys):
 
@@ -706,7 +838,7 @@ def expand_desvars(string_in, **keys):
     # see if there are any leftover un-expanded variables.  If so
     # raise an exception
     if string.find('$') != -1:
-        raise ValueError("There were unexpanded variables: '%s'" % string_in)
+        raise ValueError("There were unexpanded variables: '%s'" % string)
 
     return string
 
