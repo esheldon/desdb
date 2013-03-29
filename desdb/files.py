@@ -381,7 +381,7 @@ class Red(dict):
 class Coadd(dict):
     def __init__(self, 
                  id=None, 
-                 run=None,
+                 coadd_run=None,
                  band=None, 
                  release=None,
                  tilename=None,
@@ -405,22 +405,23 @@ class Coadd(dict):
         """
         if id is not None:
             self.method='id'
-        elif run is not None and band is not None:
+        elif coadd_run is not None and band is not None:
             self.method='runband'
         elif (release is not None 
               and tilename is not None 
               and band is not None):
             self.method='release'
         else:
-            raise ValueError("Send id= or (run=,band=) or (release=,tilename=,"
+            raise ValueError("Send id= or (coadd_run=,band=) "
+                             "or (release=,tilename=,"
                              "band=")
 
-        self['image_id'] = id
-        self['cat_id']   = None
-        self['run']      = run
-        self['band']     = band
-        self['release']  = release
-        self['tilename'] = tilename
+        self['image_id']  = id
+        self['cat_id']    = None
+        self['coadd_run'] = coadd_run
+        self['band']      = band
+        self['release']   = release
+        self['tilename']  = tilename
 
         self.verbose=verbose
         if not fs:
@@ -444,11 +445,11 @@ class Coadd(dict):
 
         df=DESFiles(fs=self.fs)
         self['image_url'] = df.url('coadd_image', 
-                                   run=self['run'], 
+                                   coadd_run=self['coadd_run'], 
                                    tilename=self['tilename'], 
                                    band=self['band'])
         self['cat_url'] = df.url('coadd_cat', 
-                                 run=self['run'], 
+                                 coadd_run=self['coadd_run'], 
                                  tilename=self['tilename'], 
                                  band=self['band'])
 
@@ -469,14 +470,14 @@ class Coadd(dict):
             cat.catalogtype='coadd_cat'
             and cat.parentid = im.id
             and im.run = '%(run)s'
-            and im.band = '%(band)s'\n""" % {'run':self['run'],
+            and im.band = '%(band)s'\n""" % {'run':self['coadd_run'],
                                              'band':self['band']}
 
         res=self.conn.quick(query,show=self.verbose)
 
         if len(res) > 1:
-            vals=(len(res),self['run'],self['band'])
-            raise ValueError("got %d entries for run=%s band=%s" % vals)
+            vals=(len(res),self['coadd_run'],self['band'])
+            raise ValueError("got %d entries for coadd_run=%s band=%s" % vals)
         for key in res[0]:
             self[key] = res[0][key]
 
@@ -587,7 +588,7 @@ class Coadd(dict):
         df=DESFiles(fs=self.fs)
         srclist=[]
         for r in res:
-            for type in ['image','bkg','cat']:
+            for type in ['image','bkg','seg','cat']:
                 ftype='red_%s' % type
                 url=df.url(ftype,
                            run=r['run'],
@@ -656,8 +657,8 @@ class DESFiles:
         """
         Get the URL (local or remote) for the file type.
 
-        parameters
-        ----------
+        possible parameters (there could be others required)
+        -------------------
         type: string
             The file type, e.g. 'red_image'.  See the _fs dict.
             dict.  If None, the root directory is returned
@@ -714,10 +715,14 @@ _fs['red_cat']   = {'remote_dir':_fs['red_exp']['remote_dir'],
 _fs['red_bkg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_bkg.fits.fz'}
+_fs['red_seg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
+                    'dir':       _fs['red_exp']['dir'], 
+                    'name':'$EXPNAME_$CCD_seg.fits.gz'}
 
 
-_fs['coadd_run']   = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$RUN/coadd',
-                      'dir':        '$DESDATA/$DESPROJ/coadd/$RUN/coadd'}
+
+_fs['coadd_run'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/coadd',
+                    'dir':        '$DESDATA/$DESPROJ/coadd/$COADD_RUN/coadd'}
 _fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':        _fs['coadd_run']['dir'], 
                       'name':       '$TILENAME_$BAND.fits.fz'}
@@ -750,21 +755,54 @@ _fs['meds_pbs'] = {'dir':_meds_script_dir,
 #
 # outputs from any weak lensing pipeline
 #
-# these are not used (or finished) yet
 
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
+_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
 
 
 # SE files by exposure name
 _fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
-_fs['wlpipe_se'] = {'dir': _fs['wlpipe_exp']['dir'],
-                    'name': '$EXPNAME-$CCD-$RUN-$FILETYPE.$EXT'}
+
+# generic, for user use
+_fs['wlpipe_se_gen'] = {'dir': _fs['wlpipe_exp']['dir'],
+                        'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT'}
+
+# required
+# meta has inputs, outputs, other metadata
+_fs['wlpipe_se_meta'] = {'dir': _fs['wlpipe_exp']['dir'],
+                         'name': '$RUN-$EXPNAME-$CCD-meta.json'}
+_fs['wlpipe_se_status'] = {'dir': _fs['wlpipe_exp']['dir'],
+                           'name': '$RUN-$EXPNAME-$CCD-status.txt'}
+
+# scripts are also pbs scripts
+_fs['wlpipe_se_script'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
+     'name': '$EXPNAME-$CCD-script.pbs'}
+_fs['wlpipe_se_check'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
+     'name': '$EXPNAME-$CCD-check.pbs'}
+_fs['wlpipe_se_log'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
+     'name': '$EXPNAME-$CCD-log.txt'}
+
 
 # ME files by tilename and band
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
 _fs['wlpipe_me'] = {'dir': _fs['wlpipe_tile']['dir'],
-                    'name': '$TILENAME-$BAND-$RUN-$FILETYPE.$EXT'}
+                    'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
+
+_fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                         'name': '$RUN-minions.pbs'}
+_fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                               'name': '$RUN-minions-check.pbs'}
+
+_fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
+_fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
+                                   'name':'$RUN-goodlist.json'}
+_fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
+                                  'name':'$RUN-badlist.json'}
+
 
 def expand_desvars(string_in, **keys):
 
@@ -793,11 +831,21 @@ def expand_desvars(string_in, **keys):
             raise ValueError("run keyword must be sent: '%s'" % string_in)
         string = string.replace('$RUN', str(run))
 
+    if string.find('$COADD_RUN') != -1:
+        coadd_run=keys.get('coadd_run', None)
+        if coadd_run is None:
+            raise ValueError("coadd_run keyword must "
+                             "be sent: '%s'" % string_in)
+        string = string.replace('$COADD_RUN', str(coadd_run))
+
+
+
     if string.find('$EXPNAME') != -1:
         expname=keys.get('expname', None)
         if expname is None:
             if 'pointing' in keys and 'band' in keys and 'visit' in keys:
-                expname='%s-%s-%s' % (keys['pointing'],keys['band'],keys['visit'])
+                expname='%s-%s-%s'
+                expname=expname% (keys['pointing'],keys['band'],keys['visit'])
         if expname is None:
             raise ValueError("expname keyword or pointing,band,visit keywords "
                              "must be sent: '%s'" % string_in)
@@ -831,6 +879,20 @@ def expand_desvars(string_in, **keys):
         if medsconf is None:
             raise ValueError("medsconf keyword must be sent: '%s'" % string_in)
         string = string.replace('$MEDSCONF', str(medsconf))
+
+    if string.find('$FILETYPE') != -1:
+        filetype=keys.get('filetype', None)
+        if filetype is None:
+            raise ValueError("filetype keyword must be sent: '%s'" % string_in)
+        string = string.replace('$FILETYPE', str(filetype))
+
+
+
+    if string.find('$EXT') != -1:
+        ext=keys.get('ext', None)
+        if ext is None:
+            raise ValueError("ext keyword must be sent: '%s'" % string_in)
+        string = string.replace('$EXT', str(ext))
 
 
 
