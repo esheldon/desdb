@@ -21,8 +21,5 @@ setup(name="desdb",
       license = "GPL",
       author="Erin Scott Sheldon",
       author_email="erin.sheldon@gmail.com",
-      packages=['desdb'], scripts=scripts)
-
-
-
-
+      packages=['desdb'],
+      scripts=scripts)

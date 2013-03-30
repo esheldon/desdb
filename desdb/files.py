@@ -796,6 +796,8 @@ _fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
                          'name': '$RUN-minions.pbs'}
 _fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
                                'name': '$RUN-minions-check.pbs'}
+_fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                              'name': '$RUN-reduce-check.py'}
 
 _fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
 _fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
