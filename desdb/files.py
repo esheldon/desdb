@@ -729,6 +729,9 @@ _fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
 _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':_fs['coadd_run']['dir'], 
                       'name':'$TILENAME_$BAND_cat.fits'}
+_fs['coadd_seg']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
+                      'dir':_fs['coadd_run']['dir'], 
+                      'name':'$TILENAME_$BAND_seg.fits.gz'}
 
 # Multi Epoch Data Structure files
 # need to put medsconf in name.
