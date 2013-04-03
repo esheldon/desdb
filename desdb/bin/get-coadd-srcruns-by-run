@@ -76,7 +76,7 @@ def main():
     coadd_run=args[0]
     band=args[1]
 
-    cf=desdb.files.Coadd(run=coadd_run,
+    cf=desdb.files.Coadd(coadd_run=coadd_run,
                          band=band,
                          user=options.user,
                          password=options.password,
