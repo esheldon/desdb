@@ -8,8 +8,14 @@ except:
     pass
 
 # my own run lists until official releases come
-_adhoc_release_map={'sve01':{'run_exp_file':
-                             '/global/project/projectdirs/des/wl/desdata/sync/2013-03-20/coadd-se-run-exp.txt'}}
+def get_adhoc_release_map():
+    desdata=get_des_rootdir()
+    rmap={}
+    sve01={}
+    sve01['run_exp_file']=desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
+    sve01['coadd_run_file']=desdata+'/sync/2013-03-20/coadd-runlist.txt'
+    rmap['sve01']=sve01
+    return rmap
 
 SKIP_CCD=61
 
@@ -62,6 +68,31 @@ def get_url(type, **keys):
 get_name=get_url
 get_path=get_url
 
+def get_coadd_info_by_runlist(runlist, band):
+    """
+    Band is a scalar
+    """
+
+    flist=[]
+    for run in runlist:
+        coadd=Coadd(coadd_run=run, band=band)
+        coadd.load()
+        flist.append( coadd )
+    return flist
+
+def get_coadd_info_by_release(release, band):
+
+    rmap=get_adhoc_release_map()
+    if release in rmap:
+        fname=rmap[release]['coadd_run_file']
+        with open(fname) as fobj:
+            runlist=fobj.readlines()
+            runlist=[run.strip() for run in runlist]
+            return get_coadd_info_by_runlist(runlist, band)
+
+    else:
+        raise RuntimeError("implement release '%s'" % release)
+
 def get_expnames_by_release(release, band, show=False,
                             user=None,password=None):
     """
@@ -88,11 +119,10 @@ def get_expnames_by_release(release, band, show=False,
     curs.close()
     return expnames
 
-def get_red_info_by_run_exp(runlist, explist,
+def get_red_info_by_runlist(runlist, explist,
                             user=None,
                             password=None,
                             host=None,
-                            desdata=None,
                             doprint=False,
                             fmt='json',
                             asdict=False):
@@ -108,11 +138,12 @@ def get_red_info_by_run_exp(runlist, explist,
 
         query="""
         select
-            '$DESDATA/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+            '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
             loc.exposurename as expname,
             loc.band,
             image.ccd,
-            image.id as image_id
+            image.id as image_id,
+            image.run as red_run
         from
             image, location loc
         where
@@ -122,10 +153,10 @@ def get_red_info_by_run_exp(runlist, explist,
             and image.imagetype='red'
             and image.ccd != 61\n"""
 
-        query=query % {'run':run,'expname':expname}
-
-        if desdata is not None:
-            query=query.replace('$DESDATA',desdata)
+        desdata=get_des_rootdir()
+        query=query % {'run':run,
+                       'expname':expname,
+                       'desdata':desdata}
 
         data=conn.quick(query)
 
@@ -155,7 +186,7 @@ def get_red_info_by_runlist(runlist,
 
     query="""
     select
-        '$DESDATA/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+        '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
         loc.exposurename as expname,
         loc.band,
         image.ccd,
@@ -168,10 +199,9 @@ def get_red_info_by_runlist(runlist,
         and image.imagetype='red'
         and image.ccd != 61\n"""
 
-    query=query % {'runcsv':runcsv}
-
-    if desdata is not None:
-        query=query.replace('$DESDATA',desdata)
+    desdata=get_des_rootdir()
+    query=query % {'runcsv':runcsv,
+                   'desdata':desdata}
 
     if doprint:
         conn.quickWrite(query,fmt=fmt,show=show)
@@ -189,27 +219,29 @@ def _read_runexp(fname):
             explist.append(ls[1])
     return runlist,explist
 
+
 def get_red_info_by_release(release, band, 
                             user=None,
                             password=None,
                             host=None,
-                            desdata=None,
                             show=True,
                             doprint=False,
                             fmt='json',
                             asdict=False):
 
-    if release in _adhoc_release_map:
-        fname=_adhoc_release_map[release]['run_exp_file']
+    rmap=get_adhoc_release_map()
+    if release in rmap:
+
+        fname=rmap[release]['run_exp_file']
         runlist,explist=_read_runexp(fname)
-        return get_red_info_by_run_exp(runlist, explist,
+        return get_red_info_by_runlist(runlist, explist,
                                        user=user,
                                        password=password,
                                        host=host,
-                                       desdata=desdata,
                                        asdict=asdict)
 
 
+    desdata=get_des_rootdir()
     net_rootdir=get_des_rootdir(fs='net')
 
     # note removing 0 dec stuff because there are dups
@@ -220,10 +252,10 @@ def get_red_info_by_release(release, band,
         im.band,
         im.ccd,
         im.id as image_id,
-        '$DESDATA/'    || im.project || '/' || im.path as image_url,
+        '%(desdata)s/'    || im.project || '/' || im.path as image_url,
         '%(netroot)s/' || im.project || '/' || im.path as image_url_remote,
         cat.id as cat_id,
-        '$DESDATA/'    || im.project || '/' || cat.path as cat_url,
+        '%(desdata)s/'    || im.project || '/' || cat.path as cat_url,
         '%(netroot)s/' || im.project || '/' || cat.path as cat_url_remote
     from
         %(release)s_files cat,
@@ -234,10 +266,11 @@ def get_red_info_by_release(release, band,
         and cat.catalog_parentid = im.id
         and cat.file_exposure_name not like '%%-0-%(band)s%%'
     order by 
-        cat_id\n""" % {'netroot':net_rootdir,'release':release,'band':band}
+        cat_id\n"""
 
-    if desdata is not None:
-        query=query.replace('$DESDATA',desdata)
+    query=query % {'netroot':net_rootdir,
+                   'release':release,
+                   'band':band}
 
     conn=desdb.Connection(user=user,password=password,host=host)
     if doprint:
@@ -248,13 +281,11 @@ def get_red_info_by_release(release, band,
 
 def get_red_info_release_byexp(release, band, 
                                user=None,password=None,
-                               desdata=None,
                                show=True,
                                doprint=False, fmt='json'):
 
     infolist = get_red_info_by_release(release, band, 
                                        user=user,password=password,
-                                       desdata=desdata,
                                        show=show)
 
     d={}
@@ -768,8 +799,9 @@ _fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
 _fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
 
 # generic, for user use
-_fs['wlpipe_se_gen'] = {'dir': _fs['wlpipe_exp']['dir'],
-                        'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT'}
+_fs['wlpipe_se_generic'] = {'dir': _fs['wlpipe_exp']['dir'],
+                            'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT'}
+
 
 # required
 # meta has inputs, outputs, other metadata
@@ -790,10 +822,32 @@ _fs['wlpipe_se_log'] = \
      'name': '$EXPNAME-$CCD-log.txt'}
 
 
+
 # ME files by tilename and band
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
-_fs['wlpipe_me'] = {'dir': _fs['wlpipe_tile']['dir'],
-                    'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
+_fs['wlpipe_me_generic'] = {'dir': _fs['wlpipe_tile']['dir'],
+                            'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
+_fs['wlpipe_me_split'] = \
+    {'dir': _fs['wlpipe_tile']['dir'],
+     'name': '$RUN-$TILENAME-$BAND-$FILETYPE-$START-$END.$EXT'}
+
+_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
+                         'name': '$RUN-$TILENAME-$BAND-meta.json'}
+_fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
+                           'name': '$RUN-$TILENAME-$BAND-status.txt'}
+
+
+_fs['wlpipe_me_script'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
+     'name': '$TILENAME-$BAND-script.pbs'}
+_fs['wlpipe_me_check'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
+     'name': '$TILENAME-$BAND-check.pbs'}
+_fs['wlpipe_me_log'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
+     'name': '$TILENAME-$BAND-log.txt'}
+
+
 
 _fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
                          'name': '$RUN-minions.pbs'}
@@ -807,6 +861,7 @@ _fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
                                    'name':'$RUN-goodlist.json'}
 _fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
                                   'name':'$RUN-badlist.json'}
+
 
 
 def expand_desvars(string_in, **keys):
@@ -890,6 +945,18 @@ def expand_desvars(string_in, **keys):
         if filetype is None:
             raise ValueError("filetype keyword must be sent: '%s'" % string_in)
         string = string.replace('$FILETYPE', str(filetype))
+
+    if string.find('$START') != -1:
+        start=keys.get('start', None)
+        if start is None:
+            raise ValueError("start keyword must be sent: '%s'" % string_in)
+        string = string.replace('$START', str(start))
+    if string.find('$END') != -1:
+        end=keys.get('end', None)
+        if end is None:
+            raise ValueError("end keyword must be sent: '%s'" % string_in)
+        string = string.replace('$END', str(end))
+
 
 
 
