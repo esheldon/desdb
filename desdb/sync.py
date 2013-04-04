@@ -104,12 +104,48 @@ class URLLister(object):
 
 class Synchronizer(object):
     """
+    sync files from the remote directory to the local directory
+
+    Files are listed in the remote directory and copied.  Time stamps are
+    checked and only newer files are copied unless clobber=True
+
+    parameters
+    ----------
+    remote_url: string
+        The remote directory
+    local_dir: string
+        The local directory
+
+    use_netrc: bool, optional
+        This is for listing the remote directory; authentication
+        can be gotten from your ~/.netrc file.
+        
+        For copies, netrc is *always* used if needed by sending the
+        --netrc-optional option to curl.
+
+        default False
+    clobber: bool, optional
+        over-write existing files
+        default False
+    show_progress: bool, optional
+        If True, curl will show progress as each file is copied.
+        default False
+    ntry: int, optional
+        Number of retries if a copy fails.  Default 10
+    debug: bool, optional
+        if True, show every step of the procedure
+
+    example
+    -------
+
     syncer=Synchronizer(remote_url, local_url)
     syncer.sync()
 
-    This is straightforward: we use the -z flag for curl to do timestamp
-    checking.  Could do it all in python but the timezone issues are
-    too much to deal with.
+    method
+    ------
+
+    Time stamping is straightforward: we use the -z flag for curl.  Could do it
+    all in python but the timezone issues are too much to deal with.
 
     Always copy to a temporary file in the output directory and then move the
     file.  This way we don't end up with a half-copied file in the final
@@ -120,12 +156,14 @@ class Synchronizer(object):
                  use_netrc=False,
                  clobber=False,
                  show_progress=False, 
+                 ntry=10,
                  debug=False):
 
         self.local_dir=local_dir
         self.clobber=clobber
         self.debug=debug
         self.show_progress=show_progress
+        self.ntry=ntry
 
         self.url_lister=URLLister(remote_url, use_netrc=use_netrc)
 
@@ -143,7 +181,7 @@ class Synchronizer(object):
             if self.debug:
                 print >>stderr,cmd
 
-            self._run_curl(cmd)
+            self._run_curl(cmd, url)
 
             # We need to check because if the local file already existed and
             # was no older than the remote, no file was downloaded
@@ -157,14 +195,17 @@ class Synchronizer(object):
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
-    def _run_curl(self, cmd):
-        res=os.system(cmd)
+    def _run_curl(self, cmd, url):
+        itry=0
+        while itry < self.ntry:
+            res=os.system(cmd)
+            if res != 0:
+                mess="Got curl error: %s for url %s" % (res,url)
+                print mess
+            itry += 1
+
         if res != 0:
-            mess="""
-Got curl error: %s
-Command was %s
-            """ % (res,cmd)
-            raise RuntimeError(mess)
+            print 'giving up after %d tries for url %s' % (self.ntry,url)
 
     def _move_from_tmp(self, local_path, tmp_path):
         if os.path.exists(local_path):

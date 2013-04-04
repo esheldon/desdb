@@ -765,8 +765,7 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'name':'$TILENAME_$BAND_seg.fits.gz'}
 
 # Multi Epoch Data Structure files
-# need to put medsconf in name.
-# or we should have a run based system?  The input coadd run set
+# should have a run based system?  The input coadd run set
 # will be changing constantly
 
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
@@ -825,11 +824,10 @@ _fs['wlpipe_se_log'] = \
 
 # ME files by tilename and band
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
+
+# non-split versions
 _fs['wlpipe_me_generic'] = {'dir': _fs['wlpipe_tile']['dir'],
                             'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
-_fs['wlpipe_me_split'] = \
-    {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-$FILETYPE-$START-$END.$EXT'}
 
 _fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
                          'name': '$RUN-$TILENAME-$BAND-meta.json'}
@@ -837,15 +835,27 @@ _fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
                            'name': '$RUN-$TILENAME-$BAND-status.txt'}
 
 
-_fs['wlpipe_me_script'] = \
+# ME split versions
+_fs['wlpipe_me_split'] = \
+    {'dir': _fs['wlpipe_tile']['dir'],
+     'name': '$RUN-$TILENAME-$BAND-$FILETYPE-$START-$END.$EXT'}
+
+_fs['wlpipe_me_meta_split'] = \
+    {'dir': _fs['wlpipe_tile']['dir'],
+     'name': '$RUN-$TILENAME-$BAND-meta-$START-$END.json'}
+_fs['wlpipe_me_status_split'] = \
+    {'dir': _fs['wlpipe_tile']['dir'],
+     'name': '$RUN-$TILENAME-$BAND-status-$START-$END.txt'}
+
+_fs['wlpipe_me_script_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-script.pbs'}
-_fs['wlpipe_me_check'] = \
+     'name': '$TILENAME-$BAND-script-$START-$END.pbs'}
+_fs['wlpipe_me_check_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-check.pbs'}
-_fs['wlpipe_me_log'] = \
+     'name': '$TILENAME-$BAND-check-$START-$END.pbs'}
+_fs['wlpipe_me_log_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-log.txt'}
+     'name': '$TILENAME-$BAND-log-$START-$END.txt'}
 
 
 
