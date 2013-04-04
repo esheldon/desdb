@@ -838,24 +838,24 @@ _fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
 # ME split versions
 _fs['wlpipe_me_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-$FILETYPE-$START-$END.$EXT'}
+     'name': '$RUN-$TILENAME-$BAND-$START-$END-$FILETYPE.$EXT'}
 
 _fs['wlpipe_me_meta_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-meta-$START-$END.json'}
+     'name': '$RUN-$TILENAME-$BAND-$START-$END-meta.json'}
 _fs['wlpipe_me_status_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-status-$START-$END.txt'}
+     'name': '$RUN-$TILENAME-$BAND-$START-$END-status.txt'}
 
 _fs['wlpipe_me_script_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-script-$START-$END.pbs'}
+     'name': '$TILENAME-$BAND-$START-$END-script.pbs'}
 _fs['wlpipe_me_check_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-check-$START-$END.pbs'}
+     'name': '$TILENAME-$BAND-$START-$END-check.pbs'}
 _fs['wlpipe_me_log_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-log-$START-$END.txt'}
+     'name': '$TILENAME-$BAND-$START-$END-log.txt'}
 
 
 

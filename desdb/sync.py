@@ -206,6 +206,7 @@ class Synchronizer(object):
 
         if res != 0:
             print 'giving up after %d tries for url %s' % (self.ntry,url)
+            print 'command was %s' % cmd
 
     def _move_from_tmp(self, local_path, tmp_path):
         if os.path.exists(local_path):
