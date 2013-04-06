@@ -25,6 +25,7 @@ class URLLister(object):
         self.use_netrc=use_netrc
 
         self.opener=self._get_opener()
+
         self._get_url_list()
 
     def get_urls(self):
@@ -62,6 +63,9 @@ class URLLister(object):
         if authinfo is not None:
             opener = urllib2.build_opener(urllib2.ProxyBasicAuthHandler,
                                           authinfo)
+            if opener is None:
+                mess="Could not create openerfor url %s; check netrc" % url
+                raise RuntimeError(mess)
         else:
             opener = urllib2.build_opener(urllib2.ProxyBasicAuthHandler)
 
@@ -165,7 +169,8 @@ class Synchronizer(object):
         self.show_progress=show_progress
         self.ntry=ntry
 
-        self.url_lister=URLLister(remote_url, use_netrc=use_netrc)
+        self.url_lister=URLLister(remote_url,
+                                  use_netrc=use_netrc)
 
     def sync(self):
         for url in self.url_lister:
