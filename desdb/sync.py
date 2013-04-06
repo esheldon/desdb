@@ -190,6 +190,8 @@ class Synchronizer(object):
                 print url
                 self._move_from_tmp(local_path, tmp_path)
 
+        except KeyboardInterrupt:
+            sys.exit(1)
         finally:
             # e.g. if the user hit ctrl-c we still want to clean up
             if os.path.exists(tmp_path):
@@ -199,6 +201,13 @@ class Synchronizer(object):
         itry=0
         while itry < self.ntry:
             res=os.system(cmd)
+            if res==2:
+                # was probably an interrupt
+                mess=("Got curl error: 2 for url %s. "
+                      "Probably interrupt, stopping" % url)
+                print mess
+                sys.exit(1)
+
             if res != 0:
                 mess="Got curl error: %s for url %s" % (res,url)
                 print mess
