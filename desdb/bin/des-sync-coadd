@@ -59,10 +59,10 @@ class CoaddDownloader(object):
     def sync(self):
         local_dir=self._dflocal.dir(type='coadd_run', 
                                     project=self.project,
-                                    run=self.run)
+                                    coadd_run=self.run)
         remote_dir=self._dfremote.dir(type='coadd_run', 
                                       project=self.project,
-                                      run=self.run)
+                                      coadd_run=self.run)
 
         syncer=desdb.sync.Synchronizer(remote_dir, local_dir, 
                                        clobber=self.clobber,
