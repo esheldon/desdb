@@ -41,6 +41,8 @@ parser.add_option("--clobber",action="store_true",
 
 parser.add_option("--debug",action="store_true", 
                   help="print debugging messages")
+parser.add_option("--verbose",action="store_true", 
+                  help="be more verbose")
 parser.add_option("--progress",action="store_true", 
                   help="show detailed progress on each file")
 
@@ -54,6 +56,7 @@ class RedDownloader(object):
 
         self.show_progress=keys.get('show_progress',False)
         self.debug=keys.get('debug',False)
+        self.verbose=keys.get('verbose',False)
 
         self._dfremote=desdb.files.DESFiles(fs='net')
         self._dflocal=desdb.files.DESFiles()
@@ -81,6 +84,7 @@ class RedDownloader(object):
                                        clobber=self.clobber,
                                        show_progress=self.show_progress,
                                        debug=self.debug,
+                                       verbose=self.verbose,
                                        use_netrc=True)
         syncer.sync()
 
@@ -110,6 +114,7 @@ def main():
                     expname=expname, 
                     clobber=options.clobber,
                     debug=options.debug,
+                    verbose=options.verbose,
                     show_progress=options.progress)
     d.sync()
 

@@ -161,10 +161,12 @@ class Synchronizer(object):
                  clobber=False,
                  show_progress=False, 
                  ntry=10,
+                 verbose=False,
                  debug=False):
 
         self.local_dir=local_dir
         self.clobber=clobber
+        self.verbose=verbose
         self.debug=debug
         self.show_progress=show_progress
         self.ntry=ntry
@@ -174,6 +176,8 @@ class Synchronizer(object):
 
     def sync(self):
         for url in self.url_lister:
+            if self.verbose:
+                print 'remote:',url
             self.sync_file(url)
 
     def sync_file(self, url):
@@ -192,7 +196,11 @@ class Synchronizer(object):
             # was no older than the remote, no file was downloaded
             if os.path.exists(tmp_path):
                 # note we usually only print the file name if a copy was made
-                print url
+                if not self.verbose:
+                    print url
+                else:
+                    print 'local:',local_path
+
                 self._move_from_tmp(local_path, tmp_path)
 
         except KeyboardInterrupt:
