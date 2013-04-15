@@ -37,7 +37,6 @@ Description
     exit 1
 }
 
-DESDATA=.
 if [[ ${DESDATA:+1} == "" ]]; then
     echo "set DESDATA environment variable"
     exit 1
