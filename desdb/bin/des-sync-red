@@ -1,0 +1,106 @@
+#!/bin/bash
+# Download DES red files. 
+#
+#  usage:  des-wget-red run [expname]
+#
+# put your user name and password in ~/.netrc. Don't make it
+# readable to anyone but you.
+#
+# All data are copied under the $DESDATA directory
+#
+#   $DESDATA/OPS/red/${run}/red/${expname}
+#
+# Author
+#   Erin Sheldon, Brookhaven National Laboratory
+# Changes
+#   2013-01-13:
+#     moved to using new https address.  This now requires user
+#     login and password.  These should be stored in ~/.netrc
+#
+#        machine {host} login {login} password {password}
+#   
+#
+
+function usage_and_exit {
+    echo "
+Usage 
+        des-wget-red run [expname]
+
+Description
+
+        Download images and catalogs for the input run, optionally
+        limiting to a particular exposure
+
+            \$DESDATA/OPS/red/\${run}/red/\${expname}
+        
+        where \$DESDATA is an environment variable pointing to the base of your
+        DES data area.  You should set \$DESREMOTE is the url of the server.
+"
+    exit 1
+}
+
+if [[ ${DESDATA:+1} == "" ]]; then
+    echo "set DESDATA environment variable"
+    exit 1
+fi
+if [[ ${DESREMOTE:+1} == "" ]]; then
+    echo "set DESREMOTE environment variable"
+    exit 1
+fi
+
+if [[ $# -lt 1 ]]; then
+    usage_and_exit
+fi
+
+run="$1"
+expname="None"
+
+local_url="${DESDATA}/OPS/red/${run}/red"
+remote_url="${DESREMOTE}/OPS/red/${run}/red"
+
+cut_dirs=6
+if [[ $# -eq 2 ]]; then
+    expname="$2"
+    local_url="${local_url}/${expname}"
+    remote_url="${remote_url}/${expname}"
+    cut_dirs=7
+fi
+
+echo "
+    run:     $run
+    expname: $expname
+    remote:  $remote_url
+    local:   $local_url
+"
+
+if [[ ! -e $local_url ]]; then
+    echo "making dir: $local_url"
+    mkdir -p "$local_url"
+    if [[ $? != "0" ]]; then
+        echo "failed to make dir, exiting"
+        exit 1
+    fi
+fi
+
+echo "chdir to dir $local_url"
+cd "$local_url"
+if [[ "$?" != "0" ]]; then
+    echo "Failed to chdir to: $local_url"
+    exit 1
+fi
+
+# No following slash on URL or it won't work!
+# -c means continue downloading, as opposed to name.1 business
+# -nH no host directories
+# use -nv for non-verbose 
+#    --progress=dot:mega     \
+wget                        \
+    --no-check-certificate  \
+    -c                      \
+    -nv                     \
+    --mirror                \
+    -nH                     \
+    --cut-dirs=$cut_dirs    \
+    --no-parent             \
+    --tries 50              \
+    "$remote_url"
