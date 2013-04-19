@@ -29,7 +29,10 @@ parser.add_option("-f","--format",default=None,
           "Default %default for ordinary queries."))
 
 parser.add_option("-d","--describe",default=None, 
-                  help="Describe the given table. Default format is 'pretty'")
+                  help="Describe the given table.")
+parser.add_option("-c","--comments",action='store_true',
+                  help="Show column comments when describing a table")
+
 parser.add_option("-l","--list-tables",action='store_true', 
                   help="List available tables. Default format is 'pretty'")
 
@@ -51,7 +54,8 @@ def main():
             format='pretty'
 
         conn=get_conn(options)
-        conn.describe(table, show=options.show, fmt=format)
+        conn.describe(table, show=options.show, comments=options.comments,
+                      fmt=format)
 
     elif options.list_tables:
         format=options.format
