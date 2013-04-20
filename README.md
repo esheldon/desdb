@@ -107,7 +107,7 @@ make this easy.  Examples
     # get the remote location of the red image by using the 'net' file system.
     df=desdb.DESFiles(fs='net')
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
-    ftp://the.des.server/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
+    https://the.des.server/DESFiles/desardata/OPS/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
 where "the.des.server" will be the actual server you are using. 
 
