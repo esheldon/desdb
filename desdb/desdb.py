@@ -165,26 +165,44 @@ class Connection(cx_Oracle.Connection):
         """
         Print a simple description of the input table.
         """
+        # separate queries because the fgetmetadata is a slow
+        # function call
         if not comments:
-            extra_cols=""
+            q="""
+                SELECT
+                    column_name, 
+                    CAST(data_type as VARCHAR2(15)) as type, 
+                    CAST(data_length as VARCHAR(6)) as length, 
+                    CAST(data_precision as VARCHAR(9)) as precision, 
+                    CAST(data_scale as VARCHAR(5)) as scale
+                FROM
+                    all_tab_columns
+                WHERE
+                    table_name = '{table}'
+                    AND column_name <> 'TNAME'
+                    AND column_name <> 'CREATOR'
+                    AND column_name <> 'TABLETYPE'
+                    AND column_name <> 'REMARKS'
+                ORDER BY 
+                    column_id
+            """
         else:
-            extra_cols=",comments"
-        q="""
-            SELECT 
-                column_name,
-                data_type as type,
-                data_length as length,
-                data_precision as precision,
-                data_scale as scale
-                {extra_cols} 
-            FROM
-                table (fgetmetadata)
-            WHERE
-                table_name  = '{table}'
-            ORDER BY
-                column_id
-        """
-        q = q.format(extra_cols=extra_cols,table=table.upper())
+            q="""
+                SELECT 
+                    column_name,
+                    data_type as type,
+                    data_length as length,
+                    data_precision as precision,
+                    data_scale as scale,
+                    comments
+                FROM
+                    table (fgetmetadata)
+                WHERE
+                    table_name  = '{table}'
+                ORDER BY
+                    column_id
+            """
+        q=q.format(table=table.upper())
 
         if show:
             stderr.write(q)
@@ -197,11 +215,11 @@ class Connection(cx_Oracle.Connection):
 
         # now indexes
         q = """
-            select
+            SELECT
                 index_name, column_name, column_position, descend
-            from
+            FROM
                 all_ind_columns
-            where
+            WHERE
                 table_name = '%s' order by index_name, column_position
         """ % table.upper()
 
