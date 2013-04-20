@@ -196,7 +196,7 @@ class Connection(cx_Oracle.Connection):
                     data_scale as scale,
                     comments
                 FROM
-                    table (fgetmetadata)
+                    table(fgetmetadata)
                 WHERE
                     table_name  = '{table}'
                 ORDER BY

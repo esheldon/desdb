@@ -156,10 +156,14 @@ For file downloads you only need this package and curl.
 
 For database queries, you need to install the oracle libraries and the
 cx_Oracle python library.  For linux you can download and install the default
-versions if you want, or use the bundles listed below.  However, the official
-version of cx_Oracle for OSX is broken on recent versions of the operating
+versions.
+
+The version of cx_Oracle for OSX is broken on recent versions of the operating
 system. Thus we have bundled a patched version in the macosx files below.
-Choose the one for your architecture.
+Choose the one for your architecture.  Every update to the operating system
+over the last couple of years has broken this module, so any feedback you can
+give is very welcome, especially if you can work out a general strategy for
+compile flags on all versions of the OS
 
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v2.tar.gz
