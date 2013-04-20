@@ -72,7 +72,7 @@ release based queries (e.g. dr012)
 Downloading Data
 ----------------
 
-There are scripts to sync files using curl.  After installation these will be
+There are scripts to sync files using wget.  After installation these will be
 in your path.
 
 
@@ -151,7 +151,7 @@ To install under a particular prefix
 
 ### dependencies 
 
-For file downloads you only need this package and curl.
+For file downloads you only need this package and wget.
 
 
 For database queries, you need to install the oracle libraries and the
