@@ -166,63 +166,25 @@ class Connection(cx_Oracle.Connection):
         Print a simple description of the input table.
         """
         if not comments:
-            q="""
-                SELECT
-                    column_name, 
-                    CAST(data_type as VARCHAR2(15)) as type, 
-                    CAST(data_length as VARCHAR(6)) as length, 
-                    CAST(data_precision as VARCHAR(9)) as precision, 
-                    CAST(data_scale as VARCHAR(5)) as scale, 
-                    CAST(nullable as VARCHAR(8)) as nullable
-                FROM
-                    all_tab_columns
-                WHERE
-                    table_name = '%s'
-                    AND column_name <> 'TNAME'
-                    AND column_name <> 'CREATOR'
-                    AND column_name <> 'TABLETYPE'
-                    AND column_name <> 'REMARKS'
-                ORDER BY 
-                    column_id
-            """
+            extra_cols=""
         else:
-            q="""
-                SELECT
-                    a.column_name, 
-                    CAST(data_type as VARCHAR2(15)) as type, 
-                    CAST(data_length as VARCHAR(6)) as length, 
-                    CAST(data_precision as VARCHAR(9)) as precision, 
-                    CAST(data_scale as VARCHAR(5)) as scale, 
-                    CAST(nullable as VARCHAR(8)) as nullable,
-                    b.comments
-                FROM
-                    (select * from all_tab_columns where table_name='%s') a
-                        LEFT JOIN comments_cache b
-                    ON 
-                        b.table_name = a.table_name
-                        AND b.column_name = a.column_name
-                        AND a.column_name <> 'TNAME'
-                        AND a.column_name <> 'CREATOR'
-                        AND a.column_name <> 'TABLETYPE'
-                ORDER BY                          
-                    column_id
-            """
-            qcrap="""
-                SELECT 
-                    column_name,
-                    data_type,
-                    data_length,
-                    data_precision,
-                    data_scale,
-                    comments
-                FROM
-                    fgottenmetadata
-                WHERE
-                    table_name  = '%s'
-                ORDER BY
-                    column_id
-            """
-        q = q % (table.upper(),)
+            extra_cols=",comments"
+        q="""
+            SELECT 
+                column_name,
+                data_type as type,
+                data_length as length,
+                data_precision as precision,
+                data_scale as scale
+                {extra_cols} 
+            FROM
+                table (fgetmetadata)
+            WHERE
+                table_name  = '{table}'
+            ORDER BY
+                column_id
+        """
+        q = q.format(extra_cols=extra_cols,table=table.upper())
 
         if show:
             stderr.write(q)
