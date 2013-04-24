@@ -47,6 +47,9 @@ examples
     # describe a table
     des-query -d coadd_objects
 
+    # describe with column comments
+    des-query -c -d coadd_objects
+
 Pre-fab queries
 ---------------
 
@@ -72,7 +75,7 @@ release based queries (e.g. dr012)
 Downloading Data
 ----------------
 
-There are scripts to sync files using curl.  After installation these will be
+There are scripts to sync files using wget.  After installation these will be
 in your path.
 
 
@@ -107,33 +110,39 @@ make this easy.  Examples
     # get the remote location of the red image by using the 'net' file system.
     df=desdb.DESFiles(fs='net')
     print df.url(type=type, run=run, expname=expname, ccd=ccd)
-    ftp://the.des.server/DESFiles/desardata/DES/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
+    https://des.file.server/DESFiles/desardata/OPS/red/20110829231419_20110802/red/decam--18--38-i-2/decam--18--38-i-2_03.fits.fz
 
-where "the.des.server" will be the actual server you are using. 
+where "des.file.server" will be the actual server you are using. 
 
 Note you need the DESDATA environment variable set to get the full path to your
 local file.  You need the DESREMOTE variable set to get the remote directory
-(see the DES wiki to get the current URL
-https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access)
 
 Other classes of interest are the Red and Coadd classes for dealing with those
 file types.
 
-Preparation
------------
+Access to Servers
+-----------------
 
 You can send your username and password via -u/--user and -p/--password, but it
-is easier to use a netrc file.
+is easier to use a netrc file.  
 
-    machine dbmachine.ncsa.uiuc.edu login your_username password your_password
+There are two machines, the file server and the database server
 
-The "dbmachine" should be replace by the actual the DES database host, and
+    machine des.file.server login your_username password your_password
+    machine des.database.server login your_username password your_password
+
+The actual server names should be replace by the actual the current ones.  and
 "your_username" and "your_password" should be replaced with your login info.
 And make sure the file is not readable or writable by others.
 
     chmod go-rw ~/.desdb_pass
 
 This is enforced.
+
+To get the current file server, see the DES wiki
+https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access
+
+To get the current database server, see
 
 Installation
 ------------
@@ -151,15 +160,19 @@ To install under a particular prefix
 
 ### dependencies 
 
-For file downloads you only need this package and curl.
+For file downloads you only need this package and wget.
 
 
 For database queries, you need to install the oracle libraries and the
 cx_Oracle python library.  For linux you can download and install the default
-versions if you want, or use the bundles listed below.  However, the official
-version of cx_Oracle for OSX is broken on recent versions of the operating
+versions.
+
+The version of cx_Oracle for OSX is broken on recent versions of the operating
 system. Thus we have bundled a patched version in the macosx files below.
-Choose the one for your architecture.
+Choose the one for your architecture.  Every update to the operating system
+over the last couple of years has broken this module, so any feedback you can
+give is very welcome, especially if you can work out a general strategy for
+compile flags on all versions of the OS
 
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v2.tar.gz

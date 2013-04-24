@@ -161,31 +161,48 @@ class Connection(cx_Oracle.Connection):
         print_cursor(curs, fmt=fmt, header=header, file=file)
         curs.close()
 
-    def describe(self, table, fmt='pretty', show=False):
+    def describe(self, table, fmt='pretty', comments=False, show=False):
         """
         Print a simple description of the input table.
         """
-        q="""
-            SELECT
-                column_name, 
-                CAST(data_type as VARCHAR2(15)) as type, 
-                CAST(data_length as VARCHAR(6)) as length, 
-                CAST(data_precision as VARCHAR(9)) as precision, 
-                CAST(data_scale as VARCHAR(5)) as scale, 
-                CAST(nullable as VARCHAR(8)) as nullable
-            FROM
-                all_tab_columns
-            WHERE
-                table_name = '%s'
-                AND column_name <> 'TNAME'
-                AND column_name <> 'CREATOR'
-                AND column_name <> 'TABLETYPE'
-                AND column_name <> 'REMARKS'
-            ORDER BY 
-                column_id
-        """
-
-        q = q % (table.upper(),)
+        # separate queries because the fgetmetadata is a slow
+        # function call
+        if not comments:
+            q="""
+                SELECT
+                    column_name, 
+                    CAST(data_type as VARCHAR2(15)) as type, 
+                    CAST(data_length as VARCHAR(6)) as length, 
+                    CAST(data_precision as VARCHAR(9)) as precision, 
+                    CAST(data_scale as VARCHAR(5)) as scale
+                FROM
+                    all_tab_columns
+                WHERE
+                    table_name = '{table}'
+                    AND column_name <> 'TNAME'
+                    AND column_name <> 'CREATOR'
+                    AND column_name <> 'TABLETYPE'
+                    AND column_name <> 'REMARKS'
+                ORDER BY 
+                    column_id
+            """
+        else:
+            q="""
+                SELECT 
+                    column_name,
+                    data_type as type,
+                    data_length as length,
+                    data_precision as precision,
+                    data_scale as scale,
+                    comments
+                FROM
+                    table(fgetmetadata)
+                WHERE
+                    table_name  = '{table}'
+                ORDER BY
+                    column_id
+            """
+        q=q.format(table=table.upper())
 
         if show:
             stderr.write(q)
@@ -198,11 +215,11 @@ class Connection(cx_Oracle.Connection):
 
         # now indexes
         q = """
-            select
+            SELECT
                 index_name, column_name, column_position, descend
-            from
+            FROM
                 all_ind_columns
-            where
+            WHERE
                 table_name = '%s' order by index_name, column_position
         """ % table.upper()
 
@@ -397,7 +414,7 @@ class CursorWriter:
         separator = []
         forms = []
         for i,length in enumerate(max_lens):
-            fmt='%'+str(length)+'s'
+            fmt='%-'+str(length)+'s'
 
             #pad = 2
             #if i == (nfields-1):
