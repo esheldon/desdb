@@ -11,10 +11,20 @@ except:
 def get_adhoc_release_map():
     desdata=get_des_rootdir()
     rmap={}
+
+    # clusters
     sve01={}
     sve01['run_exp_file']=desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
     sve01['coadd_run_file']=desdata+'/sync/2013-03-20/coadd-runlist.txt'
+
+    # spt east
+    sve02={}
+    sve02['run_exp_file']=desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
+    sve02['coadd_run_file']=desdata+'/sync/2013-03-20/coadd-runlist-spte.txt'
+
+
     rmap['sve01']=sve01
+    rmap['sve02']=sve02
     return rmap
 
 SKIP_CCD=61
@@ -165,7 +175,7 @@ def get_red_info_by_runlist(runlist, explist,
     return dlist
 
 
-def get_red_info_by_runlist(runlist, 
+def get_red_info_by_runlist_old(runlist, 
                             user=None,
                             password=None,
                             host=None,
@@ -560,7 +570,7 @@ class Coadd(dict):
             self[key] = res[0][key]
 
 
-    def _load_srclist(self):
+    def _load_srclist_old(self):
         query="""
         SELECT
             image.parentid
@@ -629,6 +639,74 @@ class Coadd(dict):
             srclist.append(r)
 
         self.srclist=srclist
+
+    def _load_srclist(self):
+        """
+        This new query works because the new system is more sane
+            - guaranteed number of levels between coadd and SE image
+            - single coadd run for all bands
+        
+        Thanks to Bob Armstrong for the new query
+
+        Note for non-psf homogenized coadds, will use one less level.
+        See Bob's email.
+        """
+
+        query="""
+        SELECT
+            magzp,e.id
+        FROM
+            coadd_src,coadd,image c,image d,image e
+        WHERE
+            coadd.band='{band}'
+            and coadd_src.coadd_imageid=coadd.id
+            and coadd.run='{coadd_run}'
+            and c.id=coadd_src.src_imageid
+            and c.parentid=d.id
+            and d.parentid=e.id\n"""
+
+        query=query.format(band=self['band'],
+                           coadd_run=self['coadd_run'])
+
+        res = self.conn.quick(query, show=self.verbose)
+        idlist=[]
+        zpdict={}
+        for d in res:
+            tid=d['id']
+            idlist.append(str(tid))
+            zpdict[tid] = d['magzp']
+
+        idcsv = ', '.join(idlist)
+
+        query="""
+        select 
+            id,run,exposurename as expname,ccd
+        from 
+            location 
+        where 
+            id in (%(idcsv)s) 
+        order by id\n""" % {'idcsv':idcsv}
+
+        res = self.conn.quick(query)
+        if len(res) != len(zpdict):
+            raise ValueError("expected %d sources but "
+                             "got %d" % (len(zpdict),len(res)))
+
+        df=DESFiles(fs=self.fs)
+        srclist=[]
+        for r in res:
+            r['magzp'] = zpdict[r['id']]
+            for type in ['image','bkg','seg','cat']:
+                ftype='red_%s' % type
+                url=df.url(ftype,
+                           run=r['run'],
+                           expname=r['expname'],
+                           ccd=r['ccd'])
+                r[ftype] = url
+            srclist.append(r)
+
+        self.srclist=srclist
+
 
 
 class DESFiles:
@@ -770,7 +848,7 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
 
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
 _meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
-_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits'}
+_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits.fz'}
 _fs['meds_input'] = {'dir': _meds_dir,
                      'name':'$TILENAME-$BAND-meds-input-$MEDSCONF.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
@@ -789,40 +867,45 @@ _fs['meds_pbs'] = {'dir':_meds_script_dir,
 # outputs from any weak lensing pipeline
 #
 
+# se exp names have underscores so we use underscores
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
 _fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
 
+_fs['wlpipe_flists'] = {'dir': _fs['wlpipe_run']['dir']+'/flists'}
+_fs['wlpipe_flist_red'] = {'dir': _fs['wlpipe_flists']['dir'],
+                           'name':'$RUN_red_info.json'}
 
 # SE files by exposure name
 _fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
 
 # generic, for user use
 _fs['wlpipe_se_generic'] = {'dir': _fs['wlpipe_exp']['dir'],
-                            'name': '$RUN-$EXPNAME-$CCD-$FILETYPE.$EXT'}
+                            'name': '$RUN_$EXPNAME_$CCD_$FILETYPE.$EXT'}
 
 
 # required
 # meta has inputs, outputs, other metadata
 _fs['wlpipe_se_meta'] = {'dir': _fs['wlpipe_exp']['dir'],
-                         'name': '$RUN-$EXPNAME-$CCD-meta.json'}
+                         'name': '$RUN_$EXPNAME_$CCD_meta.json'}
 _fs['wlpipe_se_status'] = {'dir': _fs['wlpipe_exp']['dir'],
-                           'name': '$RUN-$EXPNAME-$CCD-status.txt'}
+                           'name': '$RUN_$EXPNAME_$CCD_status.txt'}
 
 # scripts are also pbs scripts
 _fs['wlpipe_se_script'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME-$CCD-script.pbs'}
+     'name': '$EXPNAME_$CCD_script.pbs'}
 _fs['wlpipe_se_check'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME-$CCD-check.pbs'}
+     'name': '$EXPNAME_$CCD_check.pbs'}
 _fs['wlpipe_se_log'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME-$CCD-log.txt'}
+     'name': '$EXPNAME_$CCD_log.txt'}
 
 
 
 # ME files by tilename and band
+# tile names have dashes so we use dashes
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
 
 # non-split versions
