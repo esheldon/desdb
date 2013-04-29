@@ -30,6 +30,14 @@ _release_map={'dc6b':'dr012', 'dr012':'dr012'}
 
 _PREFETCH=10000
 
+# for numpy conversions of NUMBER types
+_defs={}
+_defs['f4_digits'] = 6
+_defs['f8_digits'] = 15
+_defs['lower'] = True
+
+
+
 def dataset2release(dataset):
     if dataset not in _release_map:
         raise ValueError("Unknown data set '%s'" % dataset)
@@ -100,6 +108,8 @@ class Connection(cx_Oracle.Connection):
             Return a list of lists instead of a list of dicts.
         strings: bool, optional
             Convert all values to strings
+        array: bool, optional
+            If True, convert to a numpy recarray
         show: bool, optional
             If True, print the query to stderr
         """
@@ -123,7 +133,7 @@ class Connection(cx_Oracle.Connection):
                 raise RuntimeError("Interrupt encountered")
 
         elif array:
-            raise ValueError("Implement array conversion")
+            res=cursor2array(curs)
         else:
             res = cursor2dictlist(curs)
 
@@ -715,6 +725,161 @@ class PasswordGetter:
 
         return True
 
+def cursor2array(curs,
+                 dtype=None,
+                 f4_digits=_defs['f4_digits'],
+                 f8_digits=_defs['f8_digits'],
+                 lower=_defs['lower']):
+    """
+    Convert an cx_ Oracle cursor object into a NumPy array.
+        
+    If the dtype is not given, the description field is converted to a NumPy
+    type list using the get_numpy_descr() function.
 
+    parameters
+    ----------
+    dtype: numpy dtype or descr, optional
+        A dtype for conversion.  If not sent it will be derived
+        from the cursor.
+    f4_digits, f8_digits:  int
+        The number of digits to demand when converting to these types from
+        number(digits,n).  The default is 6 or less for floats and 7-15 for
+        double, e.g. f4_digits=6, f8_digits=15  For example if you want
+        everything to be double use f4_digits=0
+
+    EXAMPLES
+        curs=conn.cursor()
+        curs.execute(query)
+        arr = Cursor2Array(curs)
+    """
+    import numpy
+    if dtype is None:
+        dtype=get_numpy_descr(curs.description, 
+                              f4_digits=f4_digits,
+                              f8_digits=f8_digits,
+                              lower=lower)
+    arr = numpy.fromiter(curs, dtype=dtype)
+    return arr
+
+
+def get_numpy_descr(odesc,
+                    f4_digits=_defs['f4_digits'], 
+                    f8_digits=_defs['f8_digits'],
+                    lower=_defs['lower']):
+    """
+    Convert a list of cx_ Oracle descriptions to a list of NumPy type
+    descriptions.
+        
+    This cx_Oracle description list is gotten from the 
+    cursor description field
+        cursor.description
+    See get_numpy_type for the the conversion process.
+
+    parameters
+    -----------
+    f4_digits, f8_digits:
+        See the docs for cursor2array
+    lower:
+        If True then all names are converted to lower case.
+        Default True
+    """
+    dtype=[]
+
+    for d in odesc:
+        name = d[0]
+        if lower:
+            name=name.lower()
+        Ntype = get_numpy_type(d, f4_digits=f4_digits, f8_digits=f8_digits)
+        dtype.append( (name, Ntype) )
+
+    return dtype
+
+
+
+def get_numpy_type(odesc,
+                   f4_digits=_defs['f4_digits'],
+                   f8_digits=_defs['f8_digits']):
+    """
+    NAME
+        get_numpy_type
+    PURPOSE
+        Convert a cx_Oracle field description list into a NumPy type.
+    USAGE
+        nt = get_numpy_type(oracle_field_description, f4_digits=6, f8_digits=15)
+
+    INPUTS
+        oracle_field_description:  This is an element of the cx_Oracle
+            description list.  This list is gotten from the cursor object:
+                cursor.description
+            An element of this list contains the following:
+                (name, cx_Oracle_type, display_size, internal_size, 
+                precision, scale, null_ok)
+        f4_digits, f8_digits:  The number of digits to demand when converting
+            to these types from number(digits,n).  The default is 6 or less
+            for floats and 7-15 for double, e.g. f4_digits=6, f8_digits=15  
+            For example if you want everything to be double use f4_digits=0
+    Currently recognizes the following cx_Oracle types
+        NATIVE_FLOAT.  This corresponds to the Oracle types 
+            BINARY_FLOAT and BINARY_DOUBLE
+        NUMBER with various precision, both floating point and fixed point
+            NUMBER(p,s) is floating point, NUMBER(p) is integer
+        STRING and character arrays of variable and fixed length. Some
+            maximum length must be specified, but this is always the case
+            for cx_Oracle description lists
+
+        Be warned that Oracle supports precisions of both integers and
+        floats that is far beyond the standard data types.  In these cases
+        the integer size is set to 64-bit and the floating type is set to
+        128 bit, but note that the 128 bit float type in numerical python is
+        in practice usually limited to less precision.
+    """
+
+    err='size of %s not allowed for type %s'
+    name = odesc[0]
+    otype = odesc[1]
+    size = odesc[3]
+    digits = odesc[4]
+    scale = odesc[5]
+    if otype == cx_Oracle.NATIVE_FLOAT:
+        # This one is easy: sizes indicate everything!
+        if size == 4:
+            Ntype='f4'
+        elif size==8:
+            Ntype='f8'
+        else:
+            raise ValueError(_binary_err % (size,))
+    elif otype == cx_Oracle.NUMBER:
+        if scale != 0:
+            if digits <= f4_digits:
+                Ntype='f4'
+            elif digits <= f8_digits:
+                Ntype='f8'
+            else:
+                sys.stdout.write(_flt_digits_err % (name,digits))
+                Ntype='f16'
+        else:
+            if digits == 0:
+                Ntype = 'i8'
+            elif digits <= 4:
+                Ntype = 'i2'
+            elif digits <= 9:
+                Ntype = 'i4'
+            elif digits <= 18:
+                Ntype= 'i8'
+            else:
+                sys.stdout.write(_int_digits_err % (name,digits))
+                Ntype='i8'
+
+    elif otype == cx_Oracle.STRING:
+        if size <= 0:
+            raise ValueError(_string_err % (name, size))
+        Ntype= 'S'+str(size)
+    else:
+        if size <= 0:
+            raise ValueError(_string_err % (name, size))
+        Ntype= 'S'+str(size)
+        #raise ValueError,'Unsupported data type: '+repr(otype)
+
+    return Ntype
 
 
