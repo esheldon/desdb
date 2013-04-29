@@ -36,6 +36,8 @@ _defs['f4_digits'] = 6
 _defs['f8_digits'] = 15
 _defs['lower'] = True
 
+_binary_err='size of %s not allowed for BINARY floating point types'
+
 _flt_digits_err=\
 """WARNING: Digits for field "%s" of %s exceeds that of an
 8-byte floating point
