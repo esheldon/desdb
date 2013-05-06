@@ -863,24 +863,6 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
 
-# using i band as detection band
-_fs['meds_dbi'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds-dbi-$MEDSCONF.fits.fz'}
-_fs['meds_dbi_input'] = {'dir': _meds_dir,
-                         'name':'$TILENAME-$BAND-meds-dbi-input-$MEDSCONF.dat'}
-_fs['meds_dbi_srclist'] = {'dir': _meds_dir,
-                           'name':'$TILENAME-$BAND-meds-dbi-srclist-$MEDSCONF.dat'}
-_fs['meds_dbi_status'] = {'dir':_meds_dir,
-                          'name':'$TILENAME-$BAND-meds-dbi-status-$MEDSCONF.yaml'}
-
-_fs['meds_dbi_script'] = {'dir':_meds_script_dir,
-                          'name':'$TILENAME-$BAND-meds-dbi.sh'}
-_fs['meds_dbi_log'] = {'dir':_meds_script_dir,
-                       'name':'$TILENAME-$BAND-meds-dbi.log'}
-_fs['meds_dbi_pbs'] = {'dir':_meds_script_dir,
-                       'name':'$TILENAME-$BAND-meds-dbi.pbs'}
-
-
-
 
 #
 # outputs from any weak lensing pipeline
