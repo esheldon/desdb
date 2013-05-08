@@ -918,7 +918,6 @@ _fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
 _fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
                            'name': '$RUN-$TILENAME-$BAND-status.txt'}
 
-
 # ME split versions
 _fs['wlpipe_me_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
@@ -946,7 +945,7 @@ _fs['wlpipe_me_log_split'] = \
 _fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
                          'name': '$RUN-minions.pbs'}
 _fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                               'name': '$RUN-minions-check.pbs'}
+                               'name': '$RUN-check-minions.pbs'}
 _fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
                               'name': '$RUN-reduce-check.py'}
 
