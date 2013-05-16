@@ -133,7 +133,7 @@ class Connection(cx_Oracle.Connection):
         curs.arraysize = _PREFETCH
 
         if show: 
-            stderr.write(query)
+            stderr.write(query);stderr.write('\n')
         curs.execute(query)
 
         if lists:

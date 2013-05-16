@@ -859,7 +859,7 @@ _fs['meds_status'] = {'dir':_meds_dir,
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-meds.sh'}
 _fs['meds_log'] = {'dir':_meds_script_dir,
-                   'name':'$TILENAME-$BAND-meds.log'}
+                   'name':'$TILENAME-$BAND-meds.pbs.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
 
@@ -901,7 +901,7 @@ _fs['wlpipe_se_check'] = \
      'name': '$EXPNAME_$CCD_check.pbs'}
 _fs['wlpipe_se_log'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME_$CCD_log.txt'}
+     'name': '$EXPNAME_$CCD_script.pbs.log'}
 
 
 
@@ -938,7 +938,7 @@ _fs['wlpipe_me_check_split'] = \
      'name': '$TILENAME-$BAND-$START-$END-check.pbs'}
 _fs['wlpipe_me_log_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-$START-$END-log.txt'}
+     'name': '$TILENAME-$BAND-$START-$END-script.pbs.log'}
 
 
 
