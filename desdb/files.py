@@ -20,7 +20,7 @@ def get_adhoc_release_map():
     # spt east
     sve02={}
     sve02['run_exp_file']=desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
-    sve02['coadd_run_file']=desdata+'/sync/2013-03-20/coadd-runlist-spte.txt'
+    sve02['coadd_run_file']=desdata+'/sync/2013-04-03/coadd-runlist-spte.txt'
 
 
     rmap['sve01']=sve01
@@ -90,16 +90,49 @@ def get_coadd_info_by_runlist(runlist, band):
         flist.append( coadd )
     return flist
 
+def _get_coadd_info_cache_fname(release, band):
+    desdata=get_des_rootdir()
+    dir=os.path.join(desdata,'users','esheldon','query-cache')
+    #fname='query-%s-%s.pickle' % (release, band)
+    fname='query-%s-%s.json' % (release, band)
+    fname=os.path.join(dir,fname)
+    return fname
+
+def _write_coadd_info_cache(release, band, data):
+    import json
+    fname=_get_coadd_info_cache_fname(release, band)
+    print 'writing cache:',fname
+    with open(fname,'w') as fobj:
+        json.dump(data, fobj, indent=1, separators=(',', ':'))
+ 
+def _read_coadd_info_cache(release, band):
+    #import cPickle as pickle
+    import json
+    fname=_get_coadd_info_cache_fname(release, band)
+    if os.path.exists(fname):
+        print 'loading cache:',fname
+        with open(fname) as fobj:
+            data=json.load(fobj)
+    else:
+        data=None
+    return data
+
 def get_coadd_info_by_release(release, band):
 
     rmap=get_adhoc_release_map()
     if release in rmap:
-        fname=rmap[release]['coadd_run_file']
-        with open(fname) as fobj:
-            runlist=fobj.readlines()
-            runlist=[run.strip() for run in runlist]
-            return get_coadd_info_by_runlist(runlist, band)
+        data=_read_coadd_info_cache(release, band)
 
+        if data is None:
+
+            fname=rmap[release]['coadd_run_file']
+            with open(fname) as fobj:
+                runlist=fobj.readlines()
+                runlist=[run.strip() for run in runlist]
+                data = get_coadd_info_by_runlist(runlist, band)
+            _write_coadd_info_cache(release, band, data)
+
+        return data
     else:
         raise RuntimeError("implement release '%s'" % release)
 
@@ -436,7 +469,7 @@ class Coadd(dict):
         Construct either with
             c=Coadd(id=)
         or
-            c=Coadd(run=, band=)
+            c=Coadd(coadd_run=, band=)
         or
             c=Coadd(release=, tilename=, band=)
 
