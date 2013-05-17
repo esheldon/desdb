@@ -93,7 +93,6 @@ def get_coadd_info_by_runlist(runlist, band):
 def _get_coadd_info_cache_fname(release, band):
     desdata=get_des_rootdir()
     dir=os.path.join(desdata,'users','esheldon','query-cache')
-    #fname='query-%s-%s.pickle' % (release, band)
     fname='query-%s-%s.json' % (release, band)
     fname=os.path.join(dir,fname)
     return fname
@@ -106,7 +105,6 @@ def _write_coadd_info_cache(release, band, data):
         json.dump(data, fobj, indent=1, separators=(',', ':'))
  
 def _read_coadd_info_cache(release, band):
-    #import cPickle as pickle
     import json
     fname=_get_coadd_info_cache_fname(release, band)
     if os.path.exists(fname):
