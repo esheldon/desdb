@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    %prog [options] release
+    %prog [options] run
 
 Look up all coadd images in the input release and write out their file ids,
 along with some other info. A release id is something like 'dr012' (dc6b)
@@ -34,9 +34,7 @@ def main():
         sys.exit(45)
 
 
-    release=args[0].strip()
-
-    runs=desdb.files.get_release_runs(release)
+    run=args[0].strip()
 
     if options.band:
         bands=[options.band]
@@ -44,11 +42,10 @@ def main():
         bands=['g','r','i','z','Y']
 
     info=[]
-    for run in runs:
-        for band in bands:
-            c=desdb.files.Coadd(coadd_run=run, band=band)
-            c.load()
-            info.append(c)
+    for band in bands:
+        c=desdb.files.Coadd(coadd_run=run, band=band)
+        c.load()
+        info.append(c)
 
     dlw=desdb.desdb.ObjWriter(fmt=options.format)
     dlw.write(info)

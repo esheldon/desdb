@@ -107,7 +107,7 @@ class Connection(cx_Oracle.Connection):
 
 
     def quick(self, query, lists=False, strings=False, array=False,
-              show=False):
+              show=False, **keys):
         """
         Execute the query and return the result.
 
@@ -627,7 +627,7 @@ class PasswordGetter:
     netrc is much more general, as it can be used for any url.
     """
     def __init__(self, user=None, password=None, host=_defhost,
-                 types=['netrc','desdb_pass']):
+                 types=['netrc','desdb_pass'], **keys):
 
         self._host=host
         if self._host is None:

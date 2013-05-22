@@ -7,6 +7,45 @@ except:
     # this is usually because the oracle libraries are not installed
     pass
 
+_release_ref_images={'Y1C2_COADD_PRERELEASE':{'g': 443103519,
+                                              'r': 443105292,
+                                              'i': 442546880,
+                                              'z': 442540179,
+                                              'Y': 442536081}}
+def get_release_ref_image(release, band):
+    """
+    Get the reference image id for this release/band
+    """
+    if release not in _release_ref_images:
+        raise ValueError("release '%s' not found in ref image "
+                         "dict" % release)
+    return _release_ref_images[release][band]
+
+def get_release_magzp_ref(release, band):
+    """
+    Get the zeropoint from the reference image id for this release/band
+    """
+    id=get_release_ref_image(release, band)
+    query="""
+    select distinct(mag_zero) from zeropoint where source='GCM' and imageid=443103519
+    \n""" % id
+
+    conn=desdb.Connection()
+    res=conn.quick(query)
+
+    magzp_ref = res[0]['zeropoint']
+    return magzp_ref
+
+
+def get_release_runs(release, **keys):
+    query="""
+    select distinct(run) from runtag where tag='%s'
+    """ % release
+
+    conn=desdb.Connection(**keys)
+    res=conn.quick(query,**keys)
+    return [r['run'] for r in res]
+
 # my own run lists until official releases come
 def get_adhoc_release_map():
     desdata=get_des_rootdir()
@@ -160,6 +199,7 @@ def get_coadd_info_by_release(release, band):
 def get_expnames_by_release(release, band, show=False,
                             user=None,password=None):
     """
+    doesn't work any more
     This is usually much faster then the get_red_info query
     """
     # note removing 0 dec stuff because there are dups
@@ -478,8 +518,6 @@ class Coadd(dict):
                  id=None, 
                  coadd_run=None,
                  band=None, 
-                 release=None,
-                 tilename=None,
                  fs=None,
                  verbose=False, 
                  user=None,
@@ -491,10 +529,6 @@ class Coadd(dict):
             c=Coadd(id=)
         or
             c=Coadd(coadd_run=, band=)
-        or
-            c=Coadd(release=, tilename=, band=)
-
-        The tilename can be inferred (at least for now) from the run
 
         Sending a connection can speed things up greatly.
         """
@@ -502,27 +536,17 @@ class Coadd(dict):
             self.method='id'
         elif coadd_run is not None and band is not None:
             self.method='runband'
-        elif (release is not None 
-              and tilename is not None 
-              and band is not None):
-            self.method='release'
         else:
-            raise ValueError("Send id= or (coadd_run=,band=) "
-                             "or (release=,tilename=,"
-                             "band=")
-
-        self['image_id']  = id
-        self['cat_id']    = None
-        self['coadd_run'] = coadd_run
-        self['band']      = band
-        self['release']   = release
-        self['tilename']  = tilename
+            raise ValueError("Send id= or (coadd_run=,band=)")
 
         self.verbose=verbose
         if not fs:
             fs=get_default_fs()
         self.fs=fs
 
+        self.image_id=id
+        self.coadd_run=coadd_run
+        self.band=band
 
         if conn is None:
             self.conn=desdb.Connection(user=user,password=password,host=host)
@@ -535,8 +559,6 @@ class Coadd(dict):
             self._get_info_by_id()
         elif self.method == 'runband':
             self._get_info_by_runband()
-        else:
-            self._get_info_by_release()
 
         df=DESFiles(fs=self.fs)
         self['image_url'] = df.url('coadd_image', 
@@ -556,6 +578,9 @@ class Coadd(dict):
         query="""
         select
             im.id as image_id,
+            im.band,
+            im.run as coadd_run,
+            im.sexmgzpt as magzp,
             cat.id as cat_id,
             im.tilename
         from
@@ -565,8 +590,8 @@ class Coadd(dict):
             cat.catalogtype='coadd_cat'
             and cat.parentid = im.id
             and im.run = '%(run)s'
-            and im.band = '%(band)s'\n""" % {'run':self['coadd_run'],
-                                             'band':self['band']}
+            and im.band = '%(band)s'\n""" % {'run':self.coadd_run,
+                                             'band':self.band}
 
         res=self.conn.quick(query,show=self.verbose)
 
@@ -580,7 +605,9 @@ class Coadd(dict):
         query="""
         select
             cat.id as cat_id,
-            im.run,
+            im.run as coadd_run,
+            im.id as image_id,
+            im.sexmgzpt as magzp,
             im.band,
             im.tilename
         from
@@ -589,7 +616,7 @@ class Coadd(dict):
         where
             cat.catalogtype='coadd_cat'
             and cat.parentid = im.id
-            and im.id = %(id)s\n""" % {'id':self['image_id']}
+            and im.id = %(id)s\n""" % {'id':self.image_id}
 
         res=self.conn.quick(query,show=self.verbose)
 
@@ -599,100 +626,6 @@ class Coadd(dict):
         for key in res[0]:
             self[key] = res[0][key]
 
-    def _get_info_by_release(self):
-        query="""
-        select
-            im.id as image_id,
-            cat.id as cat_id,
-            im.run
-        from
-            %(release)s_files cat,
-            %(release)s_files im
-        where
-            cat.filetype='coadd_cat'
-            and cat.catalog_parentid = im.id
-            and cat.tilename = '%(tile)s'
-            and cat.band='%(band)s'\n""" % {'tile':self['tilename'],
-                                            'band':self['band'],
-                                            'release':self['release']}
-
-        res=self.conn.quick(query,show=self.verbose)
-        if len(res) != 1:
-            raise ValueError("Expected a single result, found %d")
-
-        for key in res[0]:
-            self[key] = res[0][key]
-
-
-    def _load_srclist_old(self):
-        query="""
-        SELECT
-            image.parentid
-        FROM
-            image,coadd_src
-        WHERE
-            coadd_src.coadd_imageid = %d
-            AND coadd_src.src_imageid = image.id\n""" % self['image_id']
-
-        res = self.conn.quick(query, show=self.verbose)
-
-        idlist = [str(d['parentid']) for d in res]
-
-        ftype=None
-        itmax=5
-
-        i=0 
-        while ftype != 'red' and i < itmax:
-            idcsv = ', '.join(idlist)
-
-            query="""
-            SELECT
-                id,
-                imagetype,
-                parentid
-            FROM
-                image
-            WHERE
-                id in (%s)\n""" % idcsv
-
-            res = self.conn.quick(query)
-            idlist = [str(d['parentid']) for d in res]
-            ftype = res[0]['imagetype']
-            
-            if self.verbose: stderr.write('ftype: %s\n' % ftype)
-            i+=1
-
-        if ftype != 'red':
-            raise ValueError("Reach itmax=%s before finding 'red' "
-                             "images. last is %s" % (itmax, ftype))
-
-        if self.verbose: stderr.write("Found %d red images after %d "
-                                      "iterations\n" % (len(idlist),i))
-
-        query="""
-        select 
-            id,run,exposurename as expname,ccd
-        from 
-            location 
-        where 
-            id in (%(idcsv)s) 
-        order by id\n""" % {'idcsv':idcsv}
-
-        res = self.conn.quick(query)
-
-        df=DESFiles(fs=self.fs)
-        srclist=[]
-        for r in res:
-            for type in ['image','bkg','seg','cat']:
-                ftype='red_%s' % type
-                url=df.url(ftype,
-                           run=r['run'],
-                           expname=r['expname'],
-                           ccd=r['ccd'])
-                r[ftype] = url
-            srclist.append(r)
-
-        self.srclist=srclist
 
     def _load_srclist(self):
         """
