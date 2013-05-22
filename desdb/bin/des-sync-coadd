@@ -29,7 +29,7 @@ Description
         Download images and catalogs for the input run, optionally
         limiting to a particular exposure
 
-            \$DESDATA/OPS/coadd/\${run}/coadd/\${expname}
+            \$DESDATA/OPS/coadd/\${run}/coadd/
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE is the url of the server.
@@ -51,13 +51,12 @@ if [[ $# -lt 1 ]]; then
 fi
 
 run="$1"
-expname="None"
 
 local_url="${DESDATA}/OPS/coadd/${run}/coadd"
 remote_url="${DESREMOTE}/OPS/coadd/${run}/coadd"
 
 cut_dirs=6
-reject="*_det*"
+reject="*_det*,*psfcat.fits.fz"
 
 echo "
     run:     $run
