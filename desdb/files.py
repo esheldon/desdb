@@ -27,13 +27,13 @@ def get_release_magzp_ref(release, band):
     """
     id=get_release_ref_image(release, band)
     query="""
-    select distinct(mag_zero) from zeropoint where source='GCM' and imageid=443103519
+    select distinct(mag_zero) from zeropoint where source='GCM' and imageid=%s
     \n""" % id
 
     conn=desdb.Connection()
     res=conn.quick(query)
 
-    magzp_ref = res[0]['zeropoint']
+    magzp_ref = res[0]['mag_zero']
     return magzp_ref
 
 
