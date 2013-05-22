@@ -132,7 +132,30 @@ def get_coadd_info_by_release(release, band):
 
         return data
     else:
-        raise RuntimeError("implement release '%s'" % release)
+        data=_read_coadd_info_cache(release, band)
+        if data is None:
+            # all bands are under the same run for coadd
+            query="""
+            select
+                distinct(run)
+            from
+                runtag
+            where
+                tag='%s'
+            \n""" % release
+
+            conn=desdb.Connection()
+            curs = conn.cursor()
+            curs.execute(query)
+
+            runlist = [r[0] for r in curs]
+
+            curs.close()
+
+            data = get_coadd_info_by_runlist(runlist, band)
+            _write_coadd_info_cache(release, band, data)
+
+        return data
 
 def get_expnames_by_release(release, band, show=False,
                             user=None,password=None):
