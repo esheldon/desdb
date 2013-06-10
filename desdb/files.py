@@ -858,7 +858,11 @@ _fs['meds_pbs'] = {'dir':_meds_script_dir,
 # se exp names have underscores so we use underscores
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
-_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
+
+#_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
+_fs['wlpipe_scratch'] = {'dir': '$TMPDIR/DES/wlpipe'}
+_fs['wlpipe_scratch_run'] = {'dir': _fs['wlpipe_scratch']['dir']+'/$RUN'}
+_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/pbs'}
 
 _fs['wlpipe_flists'] = {'dir': _fs['wlpipe_run']['dir']+'/flists'}
 _fs['wlpipe_flist_red'] = {'dir': _fs['wlpipe_flists']['dir'],
@@ -895,12 +899,15 @@ _fs['wlpipe_se_log'] = \
 # ME files by tilename and band
 # tile names have dashes so we use dashes
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
+_fs['wlpipe_scratch_tile'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/$TILENAME-$BAND'}
 
 # non-split versions
 _fs['wlpipe_me_generic'] = {'dir': _fs['wlpipe_tile']['dir'],
                             'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
 
-_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
+#_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
+#                         'name': '$RUN-$TILENAME-$BAND-meta.json'}
+_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_scratch_tile']['dir'],
                          'name': '$RUN-$TILENAME-$BAND-meta.json'}
 _fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
                            'name': '$RUN-$TILENAME-$BAND-status.txt'}
@@ -911,7 +918,7 @@ _fs['wlpipe_me_split'] = \
      'name': '$RUN-$TILENAME-$BAND-$START-$END-$FILETYPE.$EXT'}
 
 _fs['wlpipe_me_meta_split'] = \
-    {'dir': _fs['wlpipe_tile']['dir'],
+    {'dir': _fs['wlpipe_scratch_tile']['dir'],
      'name': '$RUN-$TILENAME-$BAND-$START-$END-meta.json'}
 _fs['wlpipe_me_status_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
@@ -953,6 +960,10 @@ def expand_desvars(string_in, **keys):
 
     if string.find('$DESDATA') != -1:
         string = string.replace('$DESDATA', root)
+
+    if string.find('$TMPDIR') != -1:
+        tmpdir=os.environ['TMPDIR']
+        string = string.replace('$TMPDIR', tmpdir)
 
     if string.find('$DESREMOTE') != -1:
         string = string.replace('$DESREMOTE', root_remote)
