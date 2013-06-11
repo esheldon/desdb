@@ -11,7 +11,8 @@ News
 ----
 
 A new patched version of cx_oracle and the oracle libraries for Mac OS X is
-available in the dependencies section (version 3).
+available in the dependencies section (version 3).  This version should work
+on 10.8
 
 Connection Class
 ------------------
