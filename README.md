@@ -7,6 +7,12 @@ Note this package is in flux at the moment as things change in DESDM.  Also, we
 have moved to using ~/.netrc for authentication for both database access and
 file downloads.
 
+News
+----
+
+A new patched version of cx_oracle and the oracle libraries for Mac OS X is
+available in the dependencies section (version 3).
+
 Connection Class
 ------------------
 
@@ -175,7 +181,7 @@ give is very welcome, especially if you can work out a general strategy for
 compile flags on all versions of the OS
 
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
-    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v2.tar.gz
+    http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v3.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-i386-v2.tar.gz
 
 Download the file and untar it using

@@ -139,6 +139,10 @@ def _get_coadd_info_cache_fname(release, band):
 def _write_coadd_info_cache(release, band, data):
     import json
     fname=_get_coadd_info_cache_fname(release, band)
+    d=os.path.dirname(fname)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
     print 'writing cache:',fname
     with open(fname,'w') as fobj:
         json.dump(data, fobj, indent=1, separators=(',', ':'))
