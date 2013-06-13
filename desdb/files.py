@@ -928,6 +928,14 @@ _fs['wlpipe_me_status_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
      'name': '$RUN-$TILENAME-$BAND-$START-$END-status.txt'}
 
+_fs['wlpipe_me_master_script'] = \
+    {'dir': _fs['wlpipe_pbs']['dir'],
+     'name': 'master.sh'}
+_fs['wlpipe_me_commands'] = \
+    {'dir': _fs['wlpipe_pbs']['dir'],
+     'name': 'commands.txt'}
+
+
 _fs['wlpipe_me_script_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
      'name': '$TILENAME-$BAND-$START-$END-script.pbs'}
@@ -941,11 +949,11 @@ _fs['wlpipe_me_log_split'] = \
 
 
 _fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                         'name': '$RUN-minions.pbs'}
+                         'name': 'minions.pbs'}
 _fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                               'name': '$RUN-check-minions.pbs'}
+                               'name': 'check-minions.pbs'}
 _fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                              'name': '$RUN-reduce-check.py'}
+                              'name': 'reduce-check.py'}
 
 _fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
 _fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
