@@ -935,6 +935,17 @@ _fs['wlpipe_me_commands'] = \
     {'dir': _fs['wlpipe_pbs']['dir'],
      'name': 'commands.txt'}
 
+_fs['wlpipe_me_tile_commands'] = \
+    {'dir': _fs['wlpipe_pbs']['dir'],
+     'name': '$TILENAME-commands.txt'}
+_fs['wlpipe_me_tile_minions'] = \
+    {'dir': _fs['wlpipe_pbs']['dir'],
+     'name': '$TILENAME-minions.pbs'}
+
+
+
+
+
 
 _fs['wlpipe_me_script_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
