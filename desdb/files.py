@@ -1059,7 +1059,11 @@ def expand_desvars(string_in, **keys):
         if band is None:
             raise ValueError("band keyword must be sent: '%s'" % string_in)
 
-        string = string.replace('$BAND', str(band))
+        if isinstance(band,list):
+            bstr=''.join(band)
+        else:
+            bstr=str(band)
+        string = string.replace('$BAND', bstr)
 
 
     if string.find('$TILENAME') != -1:
