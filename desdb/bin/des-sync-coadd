@@ -25,12 +25,15 @@ Description
         Download images and catalogs for the input run, optionally
         limiting to a particular exposure
 
-            \$DESDATA/\${project}/coadd/\${run}/coadd/
+            \$DESDATA/\${project}/coadd/\${run}/\${subdir}/
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE is the url of the server.
 
         The default project is OPS.
+
+        The default subdirectory is red.  Send -q to pull the QA/segmap
+        directory, which holds the seg maps and bleed files.
 "
     exit 1
 }
@@ -46,10 +49,15 @@ fi
 
 
 project="OPS"
-while getopts "p:" Option
+subdir="coadd"
+cut_dirs=6
+
+while getopts "qp:" Option
   do
   case $Option in
-      p)  project=$OPTARG ;;
+      p) project=$OPTARG ;;
+      q) subdir="QA/segmap"
+         cut_dirs=7 ;;
       [?]) usage_and_exit ;;  
   esac
 done
@@ -62,11 +70,10 @@ fi
 
 run="$1"
 
-local_url="${DESDATA}/${project}/coadd/${run}/coadd"
-remote_url="${DESREMOTE}/${project}/coadd/${run}/coadd"
+local_url="${DESDATA}/${project}/coadd/${run}/${subdir}"
+remote_url="${DESREMOTE}/${project}/coadd/${run}/${subdir}"
 
-cut_dirs=6
-reject="*_det*,*psfcat.fits.fz"
+reject="*_det*,*psfcat.fits.fz,*.log"
 
 echo "
     run:     $run

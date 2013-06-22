@@ -26,15 +26,16 @@ Description
         Download images and catalogs for the input run, optionally
         limiting to a particular exposure
 
-            \$DESDATA/\${project}/red/\${run}/red/\${expname}
+            \$DESDATA/\${project}/red/\${run}/\${subdir}/\${expname}
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE is the url of the server.
 
         The default project is OPS.
 
-        Send -q to pull the QA directory, which olds the seg maps and
-        bleed files.
+        The default subdirectory is red.  Send -q to pull the QA directory,
+        which holds the seg maps and bleed files.
+
 "
     exit 1
 }
@@ -54,7 +55,7 @@ subdir="red"
 while getopts "qp:" Option
   do
   case $Option in
-      p)  project=$OPTARG ;;
+      p) project=$OPTARG ;;
       q) subdir="QA";;
       [?]) usage_and_exit ;;  
   esac
