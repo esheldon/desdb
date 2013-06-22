@@ -37,7 +37,22 @@ def get_release_magzp_ref(release, band):
     return magzp_ref
 
 
+def get_adhoc_release_runs(release):
+    rmap=get_adhoc_release_map()
+    fname=rmap[release]['run_file']
+
+    with open(fname) as fobj:
+            runlist=fobj.readlines()
+            runlist=[run.strip() for run in runlist]
+
+    return runlist
+
 def get_release_runs(release, **keys):
+
+    rmap=get_adhoc_release_map()
+    if release in rmap:
+        return get_adhoc_release_runs(release)
+
     query="""
     select distinct(run) from runtag where tag='%s'
     """ % release
@@ -51,6 +66,7 @@ def get_adhoc_release_map():
     desdata=get_des_rootdir()
     rmap={}
 
+    """
     # clusters
     sve01={}
     sve01['run_exp_file']=desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
@@ -60,10 +76,17 @@ def get_adhoc_release_map():
     sve02={}
     sve02['run_exp_file']=desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
     sve02['coadd_run_file']=desdata+'/sync/2013-04-03/coadd-runlist-spte.txt'
+    """
+
+    # RXJ2248
+    rxj2248_coadd={}
 
 
-    rmap['sve01']=sve01
-    rmap['sve02']=sve02
+    #rmap['sve01']=sve01
+    #rmap['sve02']=sve02
+    rmap['RXJ2248-coadd-2013-06-19'] = {}
+    rmap['RXJ2248-coadd-2013-06-19']['run_file'] = \
+            desdata+'/sync/2013-06-19/coadd-runlist-RXJ2248-2013-06-19.txt'
     return rmap
 
 SKIP_CCD=61
@@ -166,11 +189,8 @@ def get_coadd_info_by_release(release, band):
 
         if data is None:
 
-            fname=rmap[release]['coadd_run_file']
-            with open(fname) as fobj:
-                runlist=fobj.readlines()
-                runlist=[run.strip() for run in runlist]
-                data = get_coadd_info_by_runlist(runlist, band)
+            runlist=get_release_runs(release)
+            data = get_coadd_info_by_runlist(runlist, band)
             _write_coadd_info_cache(release, band, data)
 
         return data

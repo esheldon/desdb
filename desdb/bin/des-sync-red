@@ -1,18 +1,13 @@
 #!/bin/bash
 # Download DES red files. 
 #
-#  usage:  des-sync-red run [expname]
-#
-# put your user name and password in ~/.netrc. Don't make it
-# readable to anyone but you.
-#
-# All data are copied under the $DESDATA directory
-#
-#   $DESDATA/OPS/red/${run}/red/${expname}
+# Use -h to see usage and documentation.
 #
 # Author
 #   Erin Sheldon, Brookhaven National Laboratory
 # Changes
+#   2013-06-19:
+#       option to give project       
 #   2013-01-13:
 #     moved to using new https address.  This now requires user
 #     login and password.  These should be stored in ~/.netrc
@@ -24,17 +19,22 @@
 function usage_and_exit {
     echo "
 Usage 
-        des-wget-red run [expname]
+        des-wget-red [-q -p PROJECT] run [expname]
 
 Description
 
         Download images and catalogs for the input run, optionally
         limiting to a particular exposure
 
-            \$DESDATA/OPS/red/\${run}/red/\${expname}
+            \$DESDATA/\${project}/red/\${run}/red/\${expname}
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE is the url of the server.
+
+        The default project is OPS.
+
+        Send -q to pull the QA directory, which olds the seg maps and
+        bleed files.
 "
     exit 1
 }
@@ -48,6 +48,19 @@ if [[ ${DESREMOTE:+1} == "" ]]; then
     exit 1
 fi
 
+
+project="OPS"
+subdir="red"
+while getopts "qp:" Option
+  do
+  case $Option in
+      p)  project=$OPTARG ;;
+      q) subdir="QA";;
+      [?]) usage_and_exit ;;  
+  esac
+done
+shift $(($OPTIND - 1))
+
 if [[ $# -lt 1 ]]; then
     usage_and_exit
 fi
@@ -55,8 +68,8 @@ fi
 run="$1"
 expname="None"
 
-local_url="${DESDATA}/OPS/red/${run}/red"
-remote_url="${DESREMOTE}/OPS/red/${run}/red"
+local_url="${DESDATA}/${project}/red/${run}/${subdir}"
+remote_url="${DESREMOTE}/${project}/red/${run}/${subdir}"
 
 cut_dirs=6
 if [[ $# -eq 2 ]]; then

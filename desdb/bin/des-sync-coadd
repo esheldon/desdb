@@ -1,21 +1,17 @@
 #!/bin/bash
 # Download DES coadd files. 
 #
-#  usage:  des-wget-coadd run
-#
-# put your user name and password in ~/.netrc. Don't make it
-# readable to anyone but you.
-#
-# All data are copied under the $DESDATA directory
-#
-#   $DESDATA/OPS/coadd/${run}/coadd/
+# Use -h to see usage and documentation.
 #
 # Author
 #   Erin Sheldon, Brookhaven National Laboratory
 # Changes
-#     login and password should be stored in ~/.netrc
+#   2013-06-19:
+#       option to give project       
+#   2013-01-13:
+#       login and password should be stored in ~/.netrc
 #
-#        machine {host} login {login} password {password}
+#           machine {host} login {login} password {password}
 #   
 #
 
@@ -29,10 +25,12 @@ Description
         Download images and catalogs for the input run, optionally
         limiting to a particular exposure
 
-            \$DESDATA/OPS/coadd/\${run}/coadd/
+            \$DESDATA/\${project}/coadd/\${run}/coadd/
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE is the url of the server.
+
+        The default project is OPS.
 "
     exit 1
 }
@@ -46,14 +44,26 @@ if [[ ${DESREMOTE:+1} == "" ]]; then
     exit 1
 fi
 
+
+project="OPS"
+while getopts "p:" Option
+  do
+  case $Option in
+      p)  project=$OPTARG ;;
+      [?]) usage_and_exit ;;  
+  esac
+done
+shift $(($OPTIND - 1))
+
+
 if [[ $# -lt 1 ]]; then
     usage_and_exit
 fi
 
 run="$1"
 
-local_url="${DESDATA}/OPS/coadd/${run}/coadd"
-remote_url="${DESREMOTE}/OPS/coadd/${run}/coadd"
+local_url="${DESDATA}/${project}/coadd/${run}/coadd"
+remote_url="${DESREMOTE}/${project}/coadd/${run}/coadd"
 
 cut_dirs=6
 reject="*_det*,*psfcat.fits.fz"
