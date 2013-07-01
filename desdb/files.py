@@ -55,7 +55,7 @@ def get_release_runs(release, **keys):
 
     query="""
     select distinct(run) from runtag where tag='%s'
-    """ % release
+    """ % release.upper()
 
     conn=desdb.Connection(**keys)
     res=conn.quick(query,**keys)
@@ -87,6 +87,10 @@ def get_adhoc_release_map():
     rmap['RXJ2248-coadd-2013-06-19'] = {}
     rmap['RXJ2248-coadd-2013-06-19']['run_file'] = \
             desdata+'/sync/2013-06-19/coadd-runlist-RXJ2248-2013-06-19.txt'
+    #rmap['sve01-se']['run_file'] = desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
+    #rmap['sve01-me']['run-file'] = desdata+'/sync/2013-03-20/coadd-runlist.txt'
+    #rmap['spte-se']['run-file'] = desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
+    #rmap['spte-me']['run-file'] = desdata+'/sync/2013-04-03/coadd-runlist-spte.txt'
     return rmap
 
 SKIP_CCD=61
@@ -247,48 +251,70 @@ def get_expnames_by_release(release, band, show=False,
     curs.close()
     return expnames
 
-def get_red_info_by_runlist(runlist, explist,
+def get_red_info_by_runlist(runlist, explist=None,
                             user=None,
                             password=None,
-                            host=None,
-                            doprint=False,
-                            fmt='json',
-                            asdict=False):
+                            host=None):
     """
     runlist and explist are paired
     """
 
     conn=desdb.Connection(user=user,password=password,host=host)
 
+    desdata=get_des_rootdir()
     dlist=[]
 
-    for run,expname in zip(runlist,explist):
+    if explist is not None:
+        for run,expname in zip(runlist,explist):
 
-        query="""
-        select
-            '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
-            loc.exposurename as expname,
-            loc.band,
-            image.ccd,
-            image.id as image_id,
-            image.run as red_run
-        from
-            image, location loc
-        where
-            image.run = '%(run)s'
-            and loc.exposurename = '%(expname)s'
-            and loc.id=image.id
-            and image.imagetype='red'
-            and image.ccd != 61\n"""
+            query="""
+            select
+                '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+                loc.exposurename as expname,
+                loc.band,
+                image.ccd,
+                image.id as image_id,
+                image.run as red_run
+            from
+                image, location loc
+            where
+                image.run = '%(run)s'
+                and loc.exposurename = '%(expname)s'
+                and loc.id=image.id
+                and image.imagetype='red'
+                and image.ccd != 61\n"""
 
-        desdata=get_des_rootdir()
-        query=query % {'run':run,
-                       'expname':expname,
-                       'desdata':desdata}
+            query=query % {'run':run,
+                           'expname':expname,
+                           'desdata':desdata}
 
-        data=conn.quick(query)
+            data=conn.quick(query)
 
-        dlist += data
+            dlist += data
+    else:
+        for run in runlist:
+
+            query="""
+            select
+                '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+                loc.exposurename as expname,
+                loc.band,
+                image.ccd,
+                image.id as image_id,
+                image.run as red_run
+            from
+                image, location loc
+            where
+                image.run = '%(run)s'
+                and loc.id=image.id
+                and image.imagetype='red'
+                and image.ccd != 61\n"""
+
+            query=query % {'run':run, 'desdata':desdata}
+
+            data=conn.quick(query)
+
+            dlist += data
 
     return dlist
 
@@ -348,7 +374,7 @@ def _read_runexp(fname):
     return runlist,explist
 
 
-def get_red_info_by_release(release, band, 
+def get_red_info_by_release(release, band=None, 
                             user=None,
                             password=None,
                             host=None,
@@ -362,12 +388,21 @@ def get_red_info_by_release(release, band,
 
         fname=rmap[release]['run_exp_file']
         runlist,explist=_read_runexp(fname)
-        return get_red_info_by_runlist(runlist, explist,
+        return get_red_info_by_runlist(runlist, explist=explist,
                                        user=user,
                                        password=password,
                                        host=host,
                                        asdict=asdict)
+    else:
+        runs=get_release_runs(release)
+        dlist = get_red_info_by_runlist(runs)
+        
+        if band is not None:
+            dlist_new=[d for d in dlist if d['band']==band]
+            dlist=dlist_new
+        return dlist
 
+    return
 
     desdata=get_des_rootdir()
     net_rootdir=get_des_rootdir(fs='net')
@@ -919,7 +954,6 @@ _fs['wlpipe_se_log'] = \
      'name': '$EXPNAME_$CCD_script.pbs.log'}
 
 
-
 # ME files by tilename and band
 # tile names have dashes so we use dashes
 _fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
@@ -948,19 +982,16 @@ _fs['wlpipe_me_status_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
      'name': '$RUN-$TILENAME-$BAND-$START-$END-status.txt'}
 
-_fs['wlpipe_me_master_script'] = \
-    {'dir': _fs['wlpipe_pbs']['dir'],
-     'name': 'master.sh'}
-_fs['wlpipe_me_commands'] = \
-    {'dir': _fs['wlpipe_pbs']['dir'],
-     'name': 'commands.txt'}
+# these names are independent of me or se
+_fs['wlpipe_master_script'] =  {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'master.sh'}
+_fs['wlpipe_commands'] = {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'commands.txt'}
 
-_fs['wlpipe_me_tile_commands'] = \
-    {'dir': _fs['wlpipe_pbs']['dir'],
-     'name': '$TILENAME-commands.txt'}
-_fs['wlpipe_me_tile_minions'] = \
-    {'dir': _fs['wlpipe_pbs']['dir'],
-     'name': '$TILENAME-minions.pbs'}
+
+
+_fs['wlpipe_me_tile_commands'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                                  'name': '$TILENAME-commands.txt'}
+_fs['wlpipe_me_tile_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                                 'name': '$TILENAME-minions.pbs'}
 
 
 
@@ -979,8 +1010,7 @@ _fs['wlpipe_me_log_split'] = \
 
 
 
-_fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                         'name': 'minions.pbs'}
+_fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'minions.pbs'}
 _fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
                                'name': 'check-minions.pbs'}
 _fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
