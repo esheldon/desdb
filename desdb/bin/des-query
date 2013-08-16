@@ -22,6 +22,14 @@ parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
 
+parser.add_option("--port",
+                  default=desdb.desdb._defport,
+                  help="port number, default '%default'")
+
+parser.add_option("--dbname",
+                  default=desdb.desdb._defdb,
+                  help="database name, default '%default'")
+
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 
 parser.add_option("-f","--format",default=None,
@@ -39,7 +47,9 @@ parser.add_option("-l","--list-tables",action='store_true',
 def get_conn(options):
     conn=desdb.Connection(user=options.user,
                           password=options.password,
-                          host=options.host)
+                          host=options.host,
+                          dbname=options.dbname,
+                          port=options.port)
     return conn
 
 def main():
