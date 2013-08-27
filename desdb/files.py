@@ -657,8 +657,9 @@ class Coadd(dict):
         if len(res) > 1:
             vals=(len(res),self['coadd_run'],self['band'])
             raise ValueError("got %d entries for coadd_run=%s band=%s" % vals)
-        for key in res[0]:
-            self[key] = res[0][key]
+        if len(res) > 0:
+            for key in res[0]:
+                self[key] = res[0][key]
 
     def _get_info_by_id(self):
         query="""

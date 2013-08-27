@@ -11,6 +11,10 @@ import desdb
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
+
+parser.add_option("--include-run",action='store_true', 
+                  help="print run expname in two columns")
+
 parser.add_option('--exptime',default=None,
                   help="ensure exptime > this value, default %default")
 
@@ -58,5 +62,8 @@ def main():
         return
     for r in res:
         expname=r['exposurename']
-        print expname[0:expname.find('.')]
+        if options.include_run:
+            print run,expname[0:expname.find('.')]
+        else:
+            print expname[0:expname.find('.')]
 main()

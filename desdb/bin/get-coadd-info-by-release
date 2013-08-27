@@ -20,7 +20,8 @@ parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
 
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
-parser.add_option("-b","--band",default=None, help="limit to the specified band.")
+parser.add_option("-b","--band",default=None, 
+                  help="limit to the specified band(s). Can be a comma-separated list")
 parser.add_option("-f","--format",default='pyobj',
                   help=("File format for output.  pyobj, json, cjson."
                         "Default %default."))
@@ -39,7 +40,7 @@ def main():
     runs=desdb.files.get_release_runs(release)
 
     if options.band:
-        bands=[options.band]
+        bands=options.band.split(',')
     else:
         bands=['g','r','i','z','Y']
 
