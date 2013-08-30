@@ -909,6 +909,9 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
+_fs['meds_wq'] = {'dir':_meds_script_dir,
+                  'name':'$TILENAME-$BAND-meds.yaml'}
+
 
 
 #
