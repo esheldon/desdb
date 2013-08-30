@@ -859,6 +859,9 @@ _fs['red_run']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red',
 
 _fs['red_exp']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red/$EXPNAME',
                     'dir':       '$DESDATA/$DESPROJ/red/$RUN/red/$EXPNAME'}
+_fs['red_qa']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/QA/$EXPNAME',
+                   'dir':       '$DESDATA/$DESPROJ/red/$RUN/QA/$EXPNAME'}
+
 
 
 _fs['red_image'] = {'remote_dir':_fs['red_exp']['remote_dir'],
@@ -871,8 +874,8 @@ _fs['red_cat']   = {'remote_dir':_fs['red_exp']['remote_dir'],
 _fs['red_bkg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
                     'dir':       _fs['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_bkg.fits.fz'}
-_fs['red_seg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
-                    'dir':       _fs['red_exp']['dir'], 
+_fs['red_seg']   = {'remote_dir':_fs['red_qa']['remote_dir'],
+                    'dir':       _fs['red_qa']['dir'], 
                     'name':'$EXPNAME_$CCD_seg.fits.gz'}
 
 
