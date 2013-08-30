@@ -116,6 +116,7 @@ wget                        \
     -nH                     \
     --cut-dirs=$cut_dirs    \
     --no-parent             \
-    --tries 50              \
-    --reject "*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*" \
+    --tries 10              \
+    --timeout 900           \
+    --reject "*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
     "$remote_url"
