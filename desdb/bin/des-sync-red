@@ -74,9 +74,9 @@ remote_url="${DESREMOTE}/${project}/red/${run}/${subdir}"
 
 cut_dirs=6
 if [[ $# -eq 2 ]]; then
-    expname="$2"
+    expname=$(echo "$2" | sed 's:/::g')
     local_url="${local_url}/${expname}"
-    remote_url="${remote_url}/${expname}"
+    remote_url="${remote_url}/${expname}/"
     cut_dirs=7
 fi
 
