@@ -107,7 +107,8 @@ fi
 # -c means continue downloading, as opposed to name.1 business
 # -nH no host directories
 # use -nv for non-verbose 
-#    --progress=dot:mega     \
+
+
 wget                        \
     --no-check-certificate  \
     -c                      \
