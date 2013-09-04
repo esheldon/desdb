@@ -76,7 +76,7 @@ cut_dirs=6
 if [[ $# -eq 2 ]]; then
     expname=$(echo "$2" | sed 's:/::g')
     local_url="${local_url}/${expname}"
-    remote_url="${remote_url}/${expname}/"
+    remote_url="${remote_url}/${expname}"
     cut_dirs=7
 fi
 
@@ -103,11 +103,9 @@ if [[ "$?" != "0" ]]; then
     exit 1
 fi
 
-# No following slash on URL or it won't work!
 # -c means continue downloading, as opposed to name.1 business
 # -nH no host directories
 # use -nv for non-verbose 
-
 
 wget                        \
     --no-check-certificate  \
@@ -120,4 +118,4 @@ wget                        \
     --tries 10              \
     --timeout 900           \
     --reject "*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
-    "$remote_url"
+    "$remote_url/"
