@@ -2,6 +2,8 @@
 """
     %prog [options] release
 
+this is outdated, the *_files tables no longer exist
+
 Look up all coadd images for the requested release, find the single epoch 'red'
 images that were used as input, and write out a json file with the coadd and
 red image info.  The json file is keyed by coadd_id.  Release is something like

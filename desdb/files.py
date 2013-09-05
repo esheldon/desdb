@@ -699,7 +699,7 @@ class Coadd(dict):
         See Bob's email.
         """
 
-        query="""
+        query_psf_hmg="""
         SELECT
             magzp,e.id
         FROM
@@ -712,10 +712,43 @@ class Coadd(dict):
             and c.parentid=d.id
             and d.parentid=e.id\n"""
 
+        query="""
+        SELECT
+            magzp,d.id,loc.run,loc.exposurename as expname,loc.ccd
+        FROM
+            coadd_src,coadd,image c,image d, location loc
+        WHERE
+            coadd.band='{band}'
+            and coadd_src.coadd_imageid=coadd.id
+            and coadd.run='{coadd_run}'
+            and c.id=coadd_src.src_imageid
+            and c.parentid=d.id
+            and loc.id = d.id\n"""
+
+
         query=query.format(band=self['band'],
                            coadd_run=self['coadd_run'])
 
         res = self.conn.quick(query, show=self.verbose)
+
+        
+
+        df=DESFiles(fs=self.fs)
+        srclist=[]
+        for r in res:
+            for type in ['image','bkg','seg','cat']:
+                ftype='red_%s' % type
+                url=df.url(ftype,
+                           run=r['run'],
+                           expname=r['expname'],
+                           ccd=r['ccd'])
+                r[ftype] = url
+            srclist.append(r)
+
+        self.srclist=srclist
+
+        return
+
         idlist=[]
         zpdict={}
         for d in res:
@@ -723,6 +756,7 @@ class Coadd(dict):
             idlist.append(str(tid))
             zpdict[tid] = d['magzp']
 
+        print 'found',len(idlist),'ids'
         idcsv = ', '.join(idlist)
 
         query="""
