@@ -882,15 +882,18 @@ _fs['red_seg']   = {'remote_dir':_fs['red_qa']['remote_dir'],
 
 _fs['coadd_run'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/coadd',
                     'dir':        '$DESDATA/$DESPROJ/coadd/$COADD_RUN/coadd'}
+_fs['coadd_qa'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/segmap',
+                   'dir':        '$DESDATA/$DESPROJ/coadd/$COADD_RUN/QA/segmap'}
+
 _fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':        _fs['coadd_run']['dir'], 
                       'name':       '$TILENAME_$BAND.fits.fz'}
 _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
                       'dir':_fs['coadd_run']['dir'], 
                       'name':'$TILENAME_$BAND_cat.fits'}
-_fs['coadd_seg']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
-                      'dir':_fs['coadd_run']['dir'], 
-                      'name':'$TILENAME_$BAND_seg.fits.gz'}
+_fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
+                      'dir':_fs['coadd_qa']['dir'], 
+                      'name':'$TILENAME_$BAND_seg.fits.fz'}
 
 # Multi Epoch Data Structure files
 # should have a run based system?  The input coadd run set

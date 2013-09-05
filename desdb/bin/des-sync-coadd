@@ -112,4 +112,4 @@ wget                        \
     --no-parent             \
     --tries 50              \
     --reject "$reject"      \
-    "$remote_url"
+    "$remote_url/"
