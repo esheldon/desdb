@@ -38,16 +38,21 @@ def get_release_magzp_ref(release, band):
 
 
 def get_adhoc_release_runs(release):
+    release=release.upper()
+
     rmap=get_adhoc_release_map()
-    fname=rmap[release]['run_file']
+    fname=rmap[release]
 
     with open(fname) as fobj:
-            runlist=fobj.readlines()
-            runlist=[run.strip() for run in runlist]
+        runlist=fobj.readlines()
+        runlist=[run.strip() for run in runlist]
 
     return runlist
 
+
 def get_release_runs(release, **keys):
+    
+    release=release.upper()
 
     rmap=get_adhoc_release_map()
     if release in rmap:
@@ -61,37 +66,68 @@ def get_release_runs(release, **keys):
     res=conn.quick(query,**keys)
     return [r['run'] for r in res]
 
+# these are sub-chunks we like to work with, but which are not defined
+# in the database
+_release_tiles = \
+    {'SVA1-ABELL-1361':['DES0424-5957', 'DES0430-5957', 'DES0435-5957', 'DES0426-6039', 
+                        'DES0431-6039'],
+
+     'SVA1-SPT-CLJ0040-4407':['DES0035-4457', 'DES0038-4331', 'DES0038-4414', 'DES0039-4457', 
+                              'DES0042-4331', 'DES0042-4414', 'DES0043-4457', 'DES0045-4331'],
+
+     'SVA1-SPT-CLJ0438-5419':['DES0509-5414', 'DES0511-5457', 'DES0513-5331', 'DES0514-5414', 
+                              'DES0516-5457', 'DES0518-5331', 'DES0519-5414', 'DES0521-5457', 'DES0522-5331'],
+
+     'SVA1-SPT-CLJ0509-6118':['DES0503-6122', 'DES0506-6039', 'DES0506-6205', 'DES0509-6122',
+                              'DES0512-6039', 'DES0512-6205', 'DES0515-6122'] }
+
+def get_adhoc_release_dir():
+    desdata=get_des_rootdir()
+    d=os.path.join(desdata,'syncfiles','adhoc-releases')
+    return d
+
+def get_adhoc_release_file():
+    d=get_adhoc_release_dir()
+    mapfile=os.path.join(d, 'sva1-adhoc-releases.json')
+
+    return mapfile
+
+def gen_release_runs():
+    import json
+    d=get_adhoc_release_dir()
+    sva1_runs = get_release_runs('sva1_coadd')
+
+    release_map = {}
+    for r in _release_tiles:
+        tiles = _release_tiles[r]
+
+        fname=os.path.join(d,'coadd-runlist-%s.txt' % r)
+
+        release_map[r] = fname
+
+        print fname
+        with open(fname,'w') as fobj:
+            for tile in tiles:
+                for run in sva1_runs:
+                    if tile in run:
+                        fobj.write('%s\n' % run)
+
+    mapfile=get_adhoc_release_file()
+    print mapfile
+    with open(mapfile,'w') as fobj:
+        json.dump( release_map, fobj, indent=1, separators=(',', ':'))
+
+
+
 # my own run lists until official releases come
 def get_adhoc_release_map():
-    desdata=get_des_rootdir()
-    rmap={}
+    import json
+    mapfile=get_adhoc_release_file()
 
-    """
-    # clusters
-    sve01={}
-    sve01['run_exp_file']=desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
-    sve01['coadd_run_file']=desdata+'/sync/2013-03-20/coadd-runlist.txt'
+    with open(mapfile) as fobj:
+        data=json.load(fobj)
 
-    # spt east
-    sve02={}
-    sve02['run_exp_file']=desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
-    sve02['coadd_run_file']=desdata+'/sync/2013-04-03/coadd-runlist-spte.txt'
-    """
-
-    # RXJ2248
-    rxj2248_coadd={}
-
-
-    #rmap['sve01']=sve01
-    #rmap['sve02']=sve02
-    rmap['RXJ2248-coadd-2013-06-19'] = {}
-    rmap['RXJ2248-coadd-2013-06-19']['run_file'] = \
-            desdata+'/sync/2013-06-19/coadd-runlist-RXJ2248-2013-06-19.txt'
-    #rmap['sve01-se']['run_file'] = desdata+'/sync/2013-03-20/coadd-se-run-exp.txt'
-    #rmap['sve01-me']['run-file'] = desdata+'/sync/2013-03-20/coadd-runlist.txt'
-    #rmap['spte-se']['run-file'] = desdata+'/sync/2013-04-03/se-run-explist-spte.txt'
-    #rmap['spte-me']['run-file'] = desdata+'/sync/2013-04-03/coadd-runlist-spte.txt'
-    return rmap
+    return data
 
 SKIP_CCD=61
 
