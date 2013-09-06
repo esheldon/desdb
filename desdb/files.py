@@ -68,18 +68,29 @@ def get_release_runs(release, **keys):
 
 # these are sub-chunks we like to work with, but which are not defined
 # in the database
-_release_tiles = \
-    {'SVA1-ABELL-1361':['DES0424-5957', 'DES0430-5957', 'DES0435-5957', 'DES0426-6039', 
-                        'DES0431-6039'],
+def _get_adhoc_release_tiles():
+    release_tiles = \
+            {'SVA1-ABELL-1361':['DES0424-5957', 'DES0430-5957', 'DES0435-5957', 'DES0426-6039', 
+                                'DES0431-6039'],
 
-     'SVA1-SPT-CLJ0040-4407':['DES0035-4457', 'DES0038-4331', 'DES0038-4414', 'DES0039-4457', 
-                              'DES0042-4331', 'DES0042-4414', 'DES0043-4457', 'DES0045-4331'],
+             'SVA1-SPT-CLJ0040-4407':['DES0035-4457', 'DES0038-4331', 'DES0038-4414', 'DES0039-4457', 
+                                      'DES0042-4331', 'DES0042-4414', 'DES0043-4457', 'DES0045-4331'],
 
-     'SVA1-SPT-CLJ0438-5419':['DES0509-5414', 'DES0511-5457', 'DES0513-5331', 'DES0514-5414', 
-                              'DES0516-5457', 'DES0518-5331', 'DES0519-5414', 'DES0521-5457', 'DES0522-5331'],
+             'SVA1-SPT-CLJ0438-5419':['DES0509-5414', 'DES0511-5457', 'DES0513-5331', 'DES0514-5414', 
+                                      'DES0516-5457', 'DES0518-5331', 'DES0519-5414', 'DES0521-5457', 'DES0522-5331'],
 
-     'SVA1-SPT-CLJ0509-6118':['DES0503-6122', 'DES0506-6039', 'DES0506-6205', 'DES0509-6122',
-                              'DES0512-6039', 'DES0512-6205', 'DES0515-6122'] }
+             'SVA1-SPT-CLJ0509-6118':['DES0503-6122', 'DES0506-6039', 'DES0506-6205', 'DES0509-6122',
+                                      'DES0512-6039', 'DES0512-6205', 'DES0515-6122'] }
+
+    sva1_clusters=[]
+    for release in release_tiles:
+        for r in release_tiles[release]:
+            if r not in sva1_clusters:
+                sva1_clusters.append(r)
+
+    release_tiles['SVA1-CLUSTERS1'] = sva1_clusters
+
+    return release_tiles
 
 def get_adhoc_release_dir():
     desdata=get_des_rootdir()
@@ -98,8 +109,9 @@ def gen_release_runs():
     sva1_runs = get_release_runs('sva1_coadd')
 
     release_map = {}
-    for r in _release_tiles:
-        tiles = _release_tiles[r]
+    release_tiles = _get_adhoc_release_tiles()
+    for r in release_tiles:
+        tiles = release_tiles[r]
 
         fname=os.path.join(d,'coadd-runlist-%s.txt' % r)
 
