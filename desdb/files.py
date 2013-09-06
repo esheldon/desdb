@@ -695,22 +695,9 @@ class Coadd(dict):
         
         Thanks to Bob Armstrong for the new query
 
-        Note for non-psf homogenized coadds, will use one less level.
+        Note for non-psf homogenized coadds, will are using one less level.
         See Bob's email.
         """
-
-        query_psf_hmg="""
-        SELECT
-            magzp,e.id
-        FROM
-            coadd_src,coadd,image c,image d,image e
-        WHERE
-            coadd.band='{band}'
-            and coadd_src.coadd_imageid=coadd.id
-            and coadd.run='{coadd_run}'
-            and c.id=coadd_src.src_imageid
-            and c.parentid=d.id
-            and d.parentid=e.id\n"""
 
         query="""
         SELECT
@@ -749,6 +736,26 @@ class Coadd(dict):
 
         return
 
+    def _load_srclist_old(self):
+        query_psf_hmg="""
+        SELECT
+            magzp,e.id
+        FROM
+            coadd_src,coadd,image c,image d,image e
+        WHERE
+            coadd.band='{band}'
+            and coadd_src.coadd_imageid=coadd.id
+            and coadd.run='{coadd_run}'
+            and c.id=coadd_src.src_imageid
+            and c.parentid=d.id
+            and d.parentid=e.id\n"""
+
+        query=query.format(band=self['band'],
+                           coadd_run=self['coadd_run'])
+
+        res = self.conn.quick(query, show=self.verbose)
+
+ 
         idlist=[]
         zpdict={}
         for d in res:
