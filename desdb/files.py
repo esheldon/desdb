@@ -235,6 +235,7 @@ def _read_coadd_info_cache(release, band):
 
 def get_coadd_info_by_release(release, band):
 
+    release=release.upper()
     rmap=get_adhoc_release_map()
     if release in rmap:
         data=_read_coadd_info_cache(release, band)
@@ -1001,7 +1002,7 @@ _fs['meds_status'] = {'dir':_meds_dir,
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-meds.sh'}
 _fs['meds_log'] = {'dir':_meds_script_dir,
-                   'name':'$TILENAME-$BAND-meds.pbs.log'}
+                   'name':'$TILENAME-$BAND-meds.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
 _fs['meds_wq'] = {'dir':_meds_script_dir,
@@ -1017,10 +1018,10 @@ _fs['meds_wq'] = {'dir':_meds_script_dir,
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
 
-#_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
+_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
 _fs['wlpipe_scratch'] = {'dir': '$TMPDIR/DES/wlpipe'}
 _fs['wlpipe_scratch_run'] = {'dir': _fs['wlpipe_scratch']['dir']+'/$RUN'}
-_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/pbs'}
+#_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/pbs'}
 
 _fs['wlpipe_flists'] = {'dir': _fs['wlpipe_run']['dir']+'/flists'}
 _fs['wlpipe_flist_red'] = {'dir': _fs['wlpipe_flists']['dir'],
@@ -1050,7 +1051,7 @@ _fs['wlpipe_se_check'] = \
      'name': '$EXPNAME_$CCD_check.pbs'}
 _fs['wlpipe_se_log'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME_$CCD_script.pbs.log'}
+     'name': '$EXPNAME_$CCD_script.log'}
 
 
 # ME files by tilename and band
@@ -1093,19 +1094,29 @@ _fs['wlpipe_me_tile_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
                                  'name': '$TILENAME-minions.pbs'}
 
 
+# different clusters per tile.
+_fs['wlpipe_me_tile_condor'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+     'name': '$TILENAME.condor'}
+_fs['wlpipe_me_tile_condor'] = \
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+     'name': '$TILENAME.condor'}
+# all in one cluster
+_fs['wlpipe_me_condor'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                           'name': '$RUN.condor'}
 
 
 
 
 _fs['wlpipe_me_script_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-$START-$END-script.pbs'}
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+     'name': '$TILENAME-$START-$END-script.pbs'}
 _fs['wlpipe_me_check_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-$START-$END-check.pbs'}
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+     'name': '$TILENAME-$START-$END-check.pbs'}
 _fs['wlpipe_me_log_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME-$BAND',
-     'name': '$TILENAME-$BAND-$START-$END-script.pbs.log'}
+    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+     'name': '$TILENAME-$START-$END-script.log'}
 
 
 
