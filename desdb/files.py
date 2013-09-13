@@ -991,7 +991,11 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
 
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
 _meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
-_fs['meds'] = {'dir': _meds_dir, 'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits.fz'}
+
+_fs['meds_run'] = {'dir':'$DESDATA/meds/$MEDSCONF'}
+
+_fs['meds'] = {'dir': _meds_dir,
+               'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits.fz'}
 _fs['meds_input'] = {'dir': _meds_dir,
                      'name':'$TILENAME-$BAND-meds-input-$MEDSCONF.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
@@ -1017,6 +1021,14 @@ _fs['meds_wq'] = {'dir':_meds_script_dir,
 # se exp names have underscores so we use underscores
 _fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
 _fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
+
+_fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
+_fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
+                                   'name':'$RUN-goodlist.json'}
+_fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
+                                  'name':'$RUN-badlist.json'}
+
+
 
 _fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
 _fs['wlpipe_scratch'] = {'dir': '$TMPDIR/DES/wlpipe'}
@@ -1056,31 +1068,35 @@ _fs['wlpipe_se_log'] = \
 
 # ME files by tilename and band
 # tile names have dashes so we use dashes
-_fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME-$BAND'}
-_fs['wlpipe_scratch_tile'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/$TILENAME-$BAND'}
+_fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME'}
+_fs['wlpipe_scratch_tile'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/$TILENAME'}
 
 # non-split versions
 _fs['wlpipe_me_generic'] = {'dir': _fs['wlpipe_tile']['dir'],
-                            'name': '$RUN-$TILENAME-$BAND-$FILETYPE.$EXT'}
+                            'name': '$RUN-$TILENAME-$FILETYPE.$EXT'}
 
 #_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
-#                         'name': '$RUN-$TILENAME-$BAND-meta.json'}
+#                         'name': '$RUN-$TILENAME-meta.json'}
 _fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_scratch_tile']['dir'],
-                         'name': '$RUN-$TILENAME-$BAND-meta.json'}
+                         'name': '$RUN-$TILENAME-meta.json'}
 _fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
-                           'name': '$RUN-$TILENAME-$BAND-status.txt'}
+                           'name': '$RUN-$TILENAME-status.txt'}
 
 # ME split versions
 _fs['wlpipe_me_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-$START-$END-$FILETYPE.$EXT'}
+     'name': '$RUN-$TILENAME-$START-$END-$FILETYPE.$EXT'}
+
+_fs['wlpipe_me_collated'] = {'dir':_fs['wlpipe_collated']['dir'],
+                             'name':'$RUN-$TILENAME-$FILETYPE-collated.$EXT'}
+
 
 _fs['wlpipe_me_meta_split'] = \
     {'dir': _fs['wlpipe_scratch_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-$START-$END-meta.json'}
+     'name': '$RUN-$TILENAME-$START-$END-meta.json'}
 _fs['wlpipe_me_status_split'] = \
     {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$BAND-$START-$END-status.txt'}
+     'name': '$RUN-$TILENAME-$START-$END-status.txt'}
 
 # these names are independent of me or se
 _fs['wlpipe_master_script'] =  {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'master.sh'}
@@ -1105,6 +1121,11 @@ _fs['wlpipe_me_tile_condor'] = \
 _fs['wlpipe_me_condor'] = {'dir': _fs['wlpipe_pbs']['dir'],
                            'name': '$RUN.condor'}
 
+_fs['wlpipe_me_checker'] = {'dir': _fs['wlpipe_pbs']['dir'],
+                            'name': '$RUN-check.sh'}
+_fs['wlpipe_me_tile_checker'] = {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+                                 'name': '$TILENAME-check.sh'}
+
 
 
 
@@ -1125,13 +1146,6 @@ _fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
                                'name': 'check-minions.pbs'}
 _fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
                               'name': 'reduce-check.py'}
-
-_fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
-_fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
-                                   'name':'$RUN-goodlist.json'}
-_fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
-                                  'name':'$RUN-badlist.json'}
-
 
 
 def expand_desvars(string_in, **keys):
