@@ -23,6 +23,9 @@ parser.add_option("--host",default=None, help="over-ride default host")
 
 parser.add_option("-s","--show", action='store_true', help="Show the query on stderr.")
 
+parser.add_option("--withbands", default=None,
+                  help="require these bands")
+
 def main():
 
     options,args = parser.parse_args(sys.argv[1:])
@@ -32,28 +35,20 @@ def main():
         sys.exit(45)
 
     release=args[0].split(',')
+
+    withbands=options.withbands
+    if withbands is not None:
+        withbands=withbands.split(',')
+
+
     runs=desdb.files.get_release_runs(release,
+                                      withbands=withbands,
                                       user=options.user,
                                       password=options.password,
                                       host=options.host,
                                       show=options.show)
     for r in runs:
         print r
-    '''
-    conn=desdb.Connection(user=options.user,
-                          password=options.password,
-                          host=options.host)
-
-    release=args[0].strip()
-
-    query="""
-    select distinct(run) from runtag where tag='%s'
-    """ % release
-
-    res=conn.quick(query,show=options.show)
-    for r in res:
-        print r['run']
-    '''
 
 if __name__=="__main__":
     main()

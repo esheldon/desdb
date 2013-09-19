@@ -47,6 +47,23 @@ def get_sql_release_list(release):
 
     return ','.join( ["'%s'" % r.upper() for r in release] )
 
+def get_coadd_run_bands(run, conn=None, **keys):
+    query="""
+    select
+        distinct band
+    from
+        coadd
+    where
+        run='%s'
+    """ % run
+
+    if conn is None:
+        conn=desdb.Connection(**keys)
+
+    res=conn.quick(query,**keys)
+
+    return [r['band'] for r in res]
+
 def get_release_runs(release, **keys):
     rl = get_sql_release_list(release)
 
@@ -56,7 +73,23 @@ def get_release_runs(release, **keys):
 
     conn=desdb.Connection(**keys)
     res=conn.quick(query,**keys)
-    return [r['run'] for r in res]
+    runs = [r['run'] for r in res]
+
+    withbands=keys.get('withbands',None)
+    if withbands:
+        keep_runs=[]
+        for run in runs:
+            bands=get_coadd_run_bands(run, conn=conn)
+            count=0
+            for b in withbands:
+                if b in bands:
+                    count += 1
+
+            if count==len(withbands):
+                keep_runs.append(run)
+        runs=keep_runs
+
+    return runs
 
 # these are sub-chunks we like to work with, but which are not defined
 # in the database
@@ -622,8 +655,13 @@ class Coadd(dict):
         res=self.conn.quick(query,show=self.verbose)
 
         if len(res) > 1:
-            vals=(len(res),self['coadd_run'],self['band'])
+            vals=(len(res),self.coadd_run,self.band)
             raise ValueError("got %d entries for coadd_run=%s band=%s" % vals)
+        if len(res)==0:
+            vals=(self.coadd_run,self.band)
+            print query
+            raise ValueError("got no entries for coadd_run=%s band=%s" % vals)
+
         if len(res) > 0:
             for key in res[0]:
                 self[key] = res[0][key]
