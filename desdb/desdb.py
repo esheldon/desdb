@@ -24,7 +24,7 @@ _url_template = "%s:%s/%s"
 
 _defhost = 'leovip148.ncsa.uiuc.edu'
 _defport = 1521
-_defdb = 'desoper'
+_defdb = 'dessci'
 
 _release_map={'dc6b':'dr012', 'dr012':'dr012'}
 
