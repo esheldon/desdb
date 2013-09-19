@@ -31,7 +31,7 @@ def main():
         parser.print_help()
         sys.exit(45)
 
-    release=args[0].strip()
+    release=args[0].split(',')
     runs=desdb.files.get_release_runs(release,
                                       user=options.user,
                                       password=options.password,

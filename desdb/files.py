@@ -37,30 +37,22 @@ def get_release_magzp_ref(release, band):
     return magzp_ref
 
 
-def get_adhoc_release_runs(release):
-    release=release.upper()
 
-    rmap=get_adhoc_release_map()
-    fname=rmap[release]
+def get_sql_release_list(release):
+    """
+    For use in an sql query
+    """
+    if isinstance(release,basestring):
+        release=[release]
 
-    with open(fname) as fobj:
-        runlist=fobj.readlines()
-        runlist=[run.strip() for run in runlist]
-
-    return runlist
-
+    return ','.join( ["'%s'" % r.upper() for r in release] )
 
 def get_release_runs(release, **keys):
-    
-    release=release.upper()
-
-    rmap=get_adhoc_release_map()
-    if release in rmap:
-        return get_adhoc_release_runs(release)
+    rl = get_sql_release_list(release)
 
     query="""
-    select distinct(run) from runtag where tag='%s'
-    """ % release.upper()
+    select distinct(run) from runtag where tag in (%s)
+    """ % rl
 
     conn=desdb.Connection(**keys)
     res=conn.quick(query,**keys)
@@ -129,17 +121,6 @@ def gen_release_runs():
     with open(mapfile,'w') as fobj:
         json.dump( release_map, fobj, indent=1, separators=(',', ':'))
 
-
-
-# my own run lists until official releases come
-def get_adhoc_release_map():
-    import json
-    mapfile=get_adhoc_release_file()
-
-    with open(mapfile) as fobj:
-        data=json.load(fobj)
-
-    return data
 
 SKIP_CCD=61
 
@@ -211,94 +192,31 @@ def _get_coadd_info_cache_fname(release, band):
     fname=os.path.join(dir,fname)
     return fname
 
-def _write_coadd_info_cache(release, band, data):
-    import json
-    fname=_get_coadd_info_cache_fname(release, band)
-    d=os.path.dirname(fname)
-    if not os.path.exists(d):
-        os.makedirs(d)
-
-    print 'writing cache:',fname
-    with open(fname,'w') as fobj:
-        json.dump(data, fobj, indent=1, separators=(',', ':'))
- 
-def _read_coadd_info_cache(release, band):
-    import json
-    fname=_get_coadd_info_cache_fname(release, band)
-    if os.path.exists(fname):
-        print 'loading cache:',fname
-        with open(fname) as fobj:
-            data=json.load(fobj)
-    else:
-        data=None
-    return data
 
 def get_coadd_info_by_release(release, band):
+    rl = get_sql_release_list(release)
 
-    release=release.upper()
-    rmap=get_adhoc_release_map()
-    if release in rmap:
-        data=_read_coadd_info_cache(release, band)
-
-        if data is None:
-
-            runlist=get_release_runs(release)
-            data = get_coadd_info_by_runlist(runlist, band)
-            _write_coadd_info_cache(release, band, data)
-
-        return data
-    else:
-        data=_read_coadd_info_cache(release, band)
-        if data is None:
-            # all bands are under the same run for coadd
-            query="""
-            select
-                distinct(run)
-            from
-                runtag
-            where
-                tag='%s'
-            \n""" % release
-
-            conn=desdb.Connection()
-            curs = conn.cursor()
-            curs.execute(query)
-
-            runlist = [r[0] for r in curs]
-
-            curs.close()
-
-            data = get_coadd_info_by_runlist(runlist, band)
-            _write_coadd_info_cache(release, band, data)
-
-        return data
-
-def get_expnames_by_release(release, band, show=False,
-                            user=None,password=None):
-    """
-    doesn't work any more
-    This is usually much faster then the get_red_info query
-    """
-    # note removing 0 dec stuff because there are dups
+    # all bands are under the same run for coadd
     query="""
     select
-        distinct(file_exposure_name) as expname
+        distinct(run)
     from
-        %(release)s_files
+        runtag
     where
-        filetype='red'
-        and band='%(band)s'
-        and file_exposure_name not like '%%-0-%(band)s%%'
-    """ % {'release':release,'band':band}
+        tag in (%s)
+    \n""" % rl
 
-    conn=desdb.Connection(user=user,password=password)
+    conn=desdb.Connection()
     curs = conn.cursor()
     curs.execute(query)
 
-    expnames = [r[0] for r in curs]
+    runlist = [r[0] for r in curs]
 
     curs.close()
-    return expnames
+
+    data = get_coadd_info_by_runlist(runlist, band)
+
+    return data
 
 def get_red_info_by_runlist(runlist, explist=None,
                             user=None,
