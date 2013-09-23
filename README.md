@@ -3,15 +3,13 @@ desdb
 
 DES files and database access
 
-recent changes:
-* have moved to using ~/.netrc for authentication for both database access and file downloads.
-
 News
 ----
 
-A new patched version of cx_oracle and the oracle libraries for Mac OS X is
-available in the dependencies section (version 3).  This version should work
-on 10.8
+* have moved to using ~/.netrc for authentication for both database access and file downloads.
+* A new patched version of cx_oracle and the oracle libraries for Mac OS X is
+  available in the dependencies section (version 3).  This version should work
+  on 10.8
 
 Connection Class
 ------------------
