@@ -3,9 +3,8 @@ desdb
 
 DES files and database access
 
-Note this package is in flux at the moment as things change in DESDM.  Also, we
-have moved to using ~/.netrc for authentication for both database access and
-file downloads.
+recent changes:
+* have moved to using ~/.netrc for authentication for both database access and file downloads.
 
 News
 ----
