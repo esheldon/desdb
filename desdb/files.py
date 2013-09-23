@@ -226,29 +226,14 @@ def _get_coadd_info_cache_fname(release, band):
     return fname
 
 
-def get_coadd_info_by_release(release, band):
-    rl = get_sql_release_list(release)
-
-    # all bands are under the same run for coadd
-    query="""
-    select
-        distinct(run)
-    from
-        runtag
-    where
-        tag in (%s)
-    \n""" % rl
-
-    conn=desdb.Connection()
-    curs = conn.cursor()
-    curs.execute(query)
-
-    runlist = [r[0] for r in curs]
-
-    curs.close()
+def get_coadd_info_by_release(release, band, withbands=None):
+    """
+    withbands means only select tiles for which we have all the
+    bands
+    """
+    runlist = get_release_runs(release, withbands=withbands)
 
     data = get_coadd_info_by_runlist(runlist, band)
-
     return data
 
 def get_red_info_by_runlist(runlist, explist=None,

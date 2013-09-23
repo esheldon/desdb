@@ -31,7 +31,7 @@ queries on standard input or via the -q option
     des-query < file
     cat file | des-query
 
-By default the format is csv.  You can control this with the -f/--format
+By default the output format is csv.  You can control this with the -f/--format
 option.  Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted
 in nicely for viewing but is not good for machine reading.  pyobj can be read
 from python using eval
@@ -89,18 +89,18 @@ in your path.
 * des-sync-red: download red images and catalogs
 * des-sync-coadd: download coadd images and catalogs
 
-Note you need the DESDATA environment variable set to the location of your DES
-data locally.  You need the DESREMOTE set to the remote directory (see the DES
-wiki to get the current URL
+Note you need the DESDATA environment variable set to the location of your
+local DES data.  You need the DESREMOTE set to the remote directory (see the
+DES wiki to get the current URL
 https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access)
 
 
 Files
 -----
 
-The sub-module "files" has code get standard file names and locations on your
-system, the remote site, and in the database.  The class DESFiles is defined to
-make this easy.  Examples
+The sub-module "files" has code to get standard file names and locations on
+your system, the remote site, and in the database.  The class DESFiles is
+defined to make this easy.  Examples
 
     # print the local path to a red image
     import desdb
@@ -138,9 +138,9 @@ There are two machines, the file server and the database server
     machine des.file.server login your_username password your_password
     machine des.database.server login your_username password your_password
 
-The actual server names should be replace by the actual the current ones.  and
-"your_username" and "your_password" should be replaced with your login info.
-And make sure the file is not readable or writable by others.
+The server names should be replaced by the actual current ones you are using.
+and "your_username" and "your_password" should be replaced with your login
+info.  And make sure the file is not readable or writable by others.
 
     chmod go-rw ~/.desdb_pass
 
@@ -148,8 +148,6 @@ This is enforced.
 
 To get the current file server, see the DES wiki
 https://cdcvs.fnal.gov/redmine/projects/des-sci-verification/wiki/Access
-
-To get the current database server, see
 
 Installation
 ------------
