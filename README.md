@@ -15,8 +15,8 @@ Connection Class
 ------------------
 
 In the sub-module "desdb" we define the Connection class, which inherits from
-the cx_Oracle connection.  We also provide scripts that that use this class
-for database queries.
+the cx_Oracle connection.  We also provide scripts that use this class for
+database queries.
 
 Generic Query Script
 --------------------
