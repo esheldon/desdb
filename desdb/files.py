@@ -368,64 +368,18 @@ def get_red_info_by_release(release, band=None,
                             fmt='json',
                             asdict=False):
 
-    rmap=get_adhoc_release_map()
-    if release in rmap:
+    runs=get_release_runs(release)
+    dlist = get_red_info_by_runlist(runs)
+    
+    if band is not None:
+        if isinstance(band,basestring):
+            band=[band]
 
-        fname=rmap[release]['run_exp_file']
-        runlist,explist=_read_runexp(fname)
-        return get_red_info_by_runlist(runlist, explist=explist,
-                                       user=user,
-                                       password=password,
-                                       host=host,
-                                       asdict=asdict)
-    else:
-        runs=get_release_runs(release)
-        dlist = get_red_info_by_runlist(runs)
-        
-        if band is not None:
-            dlist_new=[d for d in dlist if d['band']==band]
-            dlist=dlist_new
-        return dlist
+        #dlist_new=[d for d in dlist if d['band']==band]
+        dlist_new=[d for d in dlist if d['band'] in band]
+        dlist=dlist_new
+    return dlist
 
-    return
-
-    desdata=get_des_rootdir()
-    net_rootdir=get_des_rootdir(fs='net')
-
-    # note removing 0 dec stuff because there are dups
-    query="""
-    select
-        im.project,
-        im.file_exposure_name as expname,
-        im.band,
-        im.ccd,
-        im.id as image_id,
-        '%(desdata)s/'    || im.project || '/' || im.path as image_url,
-        '%(netroot)s/' || im.project || '/' || im.path as image_url_remote,
-        cat.id as cat_id,
-        '%(desdata)s/'    || im.project || '/' || cat.path as cat_url,
-        '%(netroot)s/' || im.project || '/' || cat.path as cat_url_remote
-    from
-        %(release)s_files cat,
-        %(release)s_files im
-    where
-        cat.filetype='red_cat'
-        and cat.band='%(band)s'
-        and cat.catalog_parentid = im.id
-        and cat.file_exposure_name not like '%%-0-%(band)s%%'
-    order by 
-        cat_id\n"""
-
-    query=query % {'netroot':net_rootdir,
-                   'release':release,
-                   'band':band}
-
-    conn=desdb.Connection(user=user,password=password,host=host)
-    if doprint:
-        conn.quickWrite(query,fmt=fmt,show=show)
-    else:
-        data=conn.quick(query,show=show)
-        return data
 
 def get_red_info_release_byexp(release, band, 
                                user=None,password=None,
@@ -1030,6 +984,10 @@ _fs['wlpipe_me_split'] = \
 
 _fs['wlpipe_me_collated'] = {'dir':_fs['wlpipe_collated']['dir'],
                              'name':'$RUN-$TILENAME-$FILETYPE-collated.$EXT'}
+_fs['wlpipe_me_collated_blinded'] = {'dir':_fs['wlpipe_collated']['dir'],
+                                     'name':'$RUN-$TILENAME-$FILETYPE-collated-blind.$EXT'}
+_fs['wlpipe_me_download'] = {'dir':_fs['wlpipe_collated']['dir'],
+                             'name':'download.html'}
 
 
 _fs['wlpipe_me_meta_split'] = \
