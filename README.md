@@ -142,7 +142,7 @@ The actual server names should be replace by the actual the current ones.  and
 "your_username" and "your_password" should be replaced with your login info.
 And make sure the file is not readable or writable by others.
 
-    chmod go-rw ~/.desdb_pass
+    chmod go-rw ~/.netrc
 
 This is enforced.
 
