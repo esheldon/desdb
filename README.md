@@ -33,6 +33,8 @@ option.  Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted
 in nicely for viewing but is not good for machine reading.  pyobj can be read
 from python using eval
 
+You can also get a listing of tables with -l, and describe tables with -d.
+
 examples
 
     # Get some object data
