@@ -89,6 +89,7 @@ def get_release_runs(release, **keys):
                 keep_runs.append(run)
         runs=keep_runs
 
+    conn.close()
     return runs
 
 # these are sub-chunks we like to work with, but which are not defined
@@ -277,8 +278,10 @@ def get_red_info_by_runlist(runlist, explist=None,
 
             dlist += data
     else:
-        for run in runlist:
+        nrun=len(runlist)
+        for i,run in enumerate(runlist):
 
+            print >>stderr,"    %d/%d %s" % (i+1,nrun,run)
             query="""
             select
                 '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
@@ -359,34 +362,33 @@ def _read_runexp(fname):
     return runlist,explist
 
 
-def get_red_info_by_release(release, band=None, 
+def get_red_info_by_release(release, bands=None, 
                             user=None,
                             password=None,
                             host=None,
-                            show=True,
-                            doprint=False,
-                            fmt='json',
-                            asdict=False):
+                            show=True):
 
+    print >>stderr,"getting runlist"
     runs=get_release_runs(release)
+    print >>stderr,"getting info by runlist"
     dlist = get_red_info_by_runlist(runs)
     
-    if band is not None:
-        if isinstance(band,basestring):
-            band=[band]
+    if bands is not None:
+        print >>stderr,"selecting bands:",bands
+        if isinstance(bands,basestring):
+            bands=[bands]
 
-        #dlist_new=[d for d in dlist if d['band']==band]
-        dlist_new=[d for d in dlist if d['band'] in band]
+        dlist_new=[d for d in dlist if d['band'] in bands]
         dlist=dlist_new
     return dlist
 
 
-def get_red_info_release_byexp(release, band, 
+def get_red_info_release_byexp(release, bands=None, 
                                user=None,password=None,
                                show=True,
                                doprint=False, fmt='json'):
 
-    infolist = get_red_info_by_release(release, band, 
+    infolist = get_red_info_by_release(release, bands=bands, 
                                        user=user,password=password,
                                        show=show)
 

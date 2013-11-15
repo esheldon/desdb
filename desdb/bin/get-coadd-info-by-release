@@ -8,7 +8,7 @@ along with some other info. A release id is something like 'dr012' (dc6b)
 """
 import os
 import sys
-from sys import stdout
+from sys import stdout, stderr
 import desdb
 
 
@@ -19,9 +19,10 @@ parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
 
-parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
+parser.add_option("--srclist",action='store_true',
+                  help="Include the source lists.")
 parser.add_option("-b","--band",default=None, 
-                  help="limit to the specified band(s). Can be a comma-separated list")
+                  help="limit to the specified band(s). Can be a comma-separated list  default is [g,r,i,z]")
 parser.add_option("-f","--format",default='pyobj',
                   help=("File format for output.  pyobj, json, cjson."
                         "Default %default."))
@@ -37,20 +38,41 @@ def main():
 
     release=args[0].strip()
 
-    runs=desdb.files.get_release_runs(release)
-
     if options.band:
         bands=options.band.split(',')
     else:
-        bands=['g','r','i','z','Y']
+        bands=['g','r','i','z']
 
+    print >>stderr,"getting runs with bands",bands
+    runs=desdb.files.get_release_runs(release,
+                                      withbands=bands,
+                                      user=options.user,
+                                      password=options.password,
+                                      host=options.host)
+    print >>stderr,"found",len(runs),"runs"
+
+    conn=desdb.Connection(user=options.user,
+                          password=options.password,
+                          host=options.host)
+
+    if options.srclist:
+        print >>stderr,"getting info with srclists"
+    else:
+        print >>stderr,"getting info"
     info=[]
     for run in runs:
+        print >>stderr,run,
         for band in bands:
-            c=desdb.files.Coadd(coadd_run=run, band=band)
-            c.load()
+            print >>stderr,band,
+            c=desdb.files.Coadd(coadd_run=run, band=band, conn=conn)
+            c.load(srclist=options.srclist)
+            if options.srclist:
+                c['srclist'] = c.srclist
             info.append(c)
 
+        print >>stderr
+
+    conn.close()
     dlw=desdb.desdb.ObjWriter(fmt=options.format)
     dlw.write(info)
 

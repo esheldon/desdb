@@ -11,37 +11,36 @@ import os
 import sys
 from sys import stderr,stdout
 import desdb
+import json
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
+parser.add_option("-b","--bands",default=None, help="Only these bands.")
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
-
-parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
-parser.add_option("-f","--format", default='json',
-                  help=("File format for output.  csv, json, "
-                        "cjson, pyobj. Default %default."))
 
 def main():
 
     options,args = parser.parse_args(sys.argv[1:])
 
-    if len(args) < 2:
+    if len(args) < 1:
         parser.print_help()
         sys.exit(45)
 
 
     release=args[0].strip()
-    band=args[1].strip()
+    bands=options.bands
+    if bands is not None:
+        bands=bands.split(',')
 
-    desdb.files.get_red_info_by_release(release,band,
-                                        user=options.user,
-                                        password=options.password,
-                                        host=options.host,
-                                        show=options.show, 
-                                        doprint=True, fmt=options.format)
-    return
+    dlist=desdb.files.get_red_info_by_release(release,
+                                              bands=bands,
+                                              show=True,
+                                              user=options.user,
+                                              password=options.password,
+                                              host=options.host)
+    json.dump(dlist, stdout, indent=1, separators=(',', ':'))
 
 if __name__=="__main__":
     main()

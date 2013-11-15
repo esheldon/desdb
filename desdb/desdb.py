@@ -136,20 +136,23 @@ class Connection(cx_Oracle.Connection):
             stderr.write(query);stderr.write('\n')
         curs.execute(query)
 
-        if lists:
-            res=[]
-            try:
-                for r in curs:
-                    res.append(r)
-            except KeyboardInterrupt:
-                curs.close()
-                raise RuntimeError("Interrupt encountered")
+        if curs.description is not None:
 
-        elif array:
-            res=cursor2array(curs)
+            if lists:
+                res=[]
+                try:
+                    for r in curs:
+                        res.append(r)
+                except KeyboardInterrupt:
+                    curs.close()
+                    raise RuntimeError("Interrupt encountered")
+
+            elif array:
+                res=cursor2array(curs)
+            else:
+                res = cursor2dictlist(curs)
         else:
-            res = cursor2dictlist(curs)
-
+            res=None
         curs.close()
         return res
 
@@ -181,7 +184,8 @@ class Connection(cx_Oracle.Connection):
             stderr.write(query)
         curs.execute(query)
 
-        print_cursor(curs, fmt=fmt, header=header, file=file)
+        if curs.description is not None:
+            print_cursor(curs, fmt=fmt, header=header, file=file)
         curs.close()
 
     def describe(self, table, fmt='pretty', comments=False, show=False):
@@ -361,7 +365,10 @@ class CursorWriter:
         Simple csv with, by default, a header
         """
         import time
+
         desc = curs.description
+        if desc is None:
+            return
 
         ncol = len(desc)
         if 0 == ncol:
