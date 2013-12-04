@@ -195,24 +195,39 @@ class Connection(cx_Oracle.Connection):
         # separate queries because the fgetmetadata is a slow
         # function call
         if not comments:
+            #q="""
+            #    SELECT
+            #        column_name, 
+            #        CAST(data_type as VARCHAR2(15)) as type, 
+            #        CAST(data_length as VARCHAR(6)) as length, 
+            #        CAST(data_precision as VARCHAR(9)) as precision, 
+            #        CAST(data_scale as VARCHAR(5)) as scale
+            #    FROM
+            #        all_tab_columns
+            #    WHERE
+            #        table_name = '{table}'
+            #        AND column_name <> 'TNAME'
+            #        AND column_name <> 'CREATOR'
+            #        AND column_name <> 'TABLETYPE'
+            #        AND column_name <> 'REMARKS'
+            #    ORDER BY 
+            #        column_id
+            #"""
             q="""
-                SELECT
-                    column_name, 
+                SELECT 
+                    column_name,
                     CAST(data_type as VARCHAR2(15)) as type, 
                     CAST(data_length as VARCHAR(6)) as length, 
                     CAST(data_precision as VARCHAR(9)) as precision, 
                     CAST(data_scale as VARCHAR(5)) as scale
                 FROM
-                    all_tab_columns
+                    table(fgetmetadata)
                 WHERE
-                    table_name = '{table}'
-                    AND column_name <> 'TNAME'
-                    AND column_name <> 'CREATOR'
-                    AND column_name <> 'TABLETYPE'
-                    AND column_name <> 'REMARKS'
-                ORDER BY 
+                    table_name  = '{table}'
+                ORDER BY
                     column_id
             """
+
         else:
             q="""
                 SELECT 
