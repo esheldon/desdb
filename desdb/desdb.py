@@ -917,4 +917,228 @@ def get_numpy_type(odesc,
 
     return Ntype
 
+def array2table(arr, table_name, control_file, defs={}, create=False):
+    """
 
+    Write a numpy array with fields to an ascii file for uploading.  The ascii
+    file contains in it the commands need to produce the load.  Optionally
+    written is a file holding an sql query to create the required table if it
+    doesn't exist.
+
+    - Creating the table.  If the table already exists, skip this step 
+        - send create=True
+        - create the table using the statement written in
+        {control_file}-create-table.sql
+
+        That file will hold an sql statement with the create table statement.
+        Note indexes must be added separately.
+
+    - Loading the data into the table.
+        - The control file can be sent to the sqlldr command
+            sqlldr username/password control=control_file
+
+    parameters
+    ----------
+    arr: numpy array
+        The array, must have fields defined (e.g. a recarray)
+    table_name: string
+        Name of the table.
+    control_file: string
+        Name of the control file to write.  This file will hold
+        all the control information for loading as well as the
+        data itself.
+    defs: dict,optional
+        A dict returning a list of field defs. It is keyed by field names from
+        the array.  This can be used to over-ride the defaults, e.g. to use a
+        different name or to over-ride conversions for arrays.
+    create: bool, optional
+        If True, also write a file holding the create table statement.
+        {control_file}-create-table.sql
+    """
+    import numpy
+
+    arr=arr.view(numpy.ndarray)
+    create_statement, alldefs = get_tabledef(arr.dtype.descr, table_name, defs=defs)
+
+    if create:
+        create_file="%s.create-table.sql" % control_file
+        print 'writing create table statement',create_file
+        with open(create_file,'w') as fobj:
+            fobj.write(create_statement)
+
+    names = [d[0] for d in alldefs]
+    name_list=', '.join(names)
+
+    print 'writing control file',control_file
+    with open(control_file,'w') as fobj:
+        top="""
+load data
+    infile *
+    append into table
+        {table_name}
+    fields terminated by ","
+    ( {name_list} )
+begindata\n""".format(table_name=table_name,
+                              name_list=name_list)
+        fobj.write(top)
+        _write_sqlldr_data(arr, fobj)
+
+def _write_sqlldr_data(arr, fobj):
+    try:
+        import recfile
+        have_recfile=True
+    except:
+        try:
+            from esutil import recfile
+            have_recfile=True
+        except:
+            have_recfile=False
+
+    if have_recfile:
+        rf=recfile.Recfile(fobj, mode='w+', delim=',', ignorenull=True)
+        rf.Write(arr)
+    else:
+        raise RuntimeError("implement writing without recfile")
+
+def get_tabledef(descr, table_name, defs={}):
+    """
+    Convert a numpy descriptor to oracle table creation
+    statement
+
+    array columns are converted to name_{dim1}_{dim2}...{dimn}
+
+    parameters
+    ----------
+    descr: numpy type descriptor
+        E.g. arr.dtype.descr
+    table_name:
+        Name of the table
+    defs: dict,optional
+        A dict returning a list of field defs. It is keyed by field names from
+        the array.  This can be used to over-ride the defaults, e.g. to use a
+        different name or to over-ride conversions for arrays.
+
+    output
+    ------
+    The create table statement as well as the array of individual column definitions
+    """
+
+    alldefs = get_coldefs(descr, defs=defs)
+
+    sdefs=[]
+    for d in alldefs:
+        sdefs.append('%s %s' % d)
+
+    sdefs=',\n'.join(sdefs)
+    statement=['create table {table_name} ('.format(table_name=table_name)]
+    statement.append(sdefs)
+    statement.append(') compress\n')
+
+    statement='\n'.join(statement)
+    return statement, alldefs
+
+def get_coldefs(descr, defs={}):
+    """
+    Convert a numpy descriptor to a set of oracle 
+    column definitions
+
+    array columns are converted to name_{dim1}_{dim2}...{dimn}
+
+    parameters
+    ----------
+    descr: numpy type descriptor
+        E.g. arr.dtype.descr
+    defs: dict,optional
+        A dict returning a list of field defs. It is keyed by field names from
+        the array.  This can be used to over-ride the defaults, e.g. to use a
+        different name or to over-ride conversions for arrays.
+    """
+
+    if defs is None:
+        defs={}
+
+    alldefs=[]
+    def_template='%s not null'
+    for d in descr:
+        name=d[0]
+        ot=get_oracle_type(d[1])
+
+        if name in defs:
+            alldefs += defs[name]
+        elif len(d) == 2:
+            # this is a scalar column... easy!
+            defi=def_template % ot
+            alldefs.append( (name,defi) )
+        else:
+            dims=d[2]
+            if not isinstance(dims,tuple):
+                dims=(dims,)
+            names=get_arr_colnames(name,dims)
+            
+            for n in names:
+                defi=def_template % (ot)
+                alldefs.append( (n,defi) )
+
+    return alldefs
+
+def get_arr_colnames(name, dims):
+    """
+    Get db names for an array, naming 
+        name_{num1}_{num2}...
+    """
+    ndim=len(dims)
+    if ndim==1:
+        names=get_arr1_colnames(name,dims)
+    elif ndim==2:
+        names=get_arr2_colnames(name,dims)
+    else:
+        raise ValueError("only support 1 and 2 d arrays")
+
+    return names
+
+def get_arr1_colnames(name, dims):
+    """
+    Get db names for an array, naming 
+        name_{num}
+    """
+    names=[]
+    for n in xrange(1,dims[0]+1):
+        names.append( '%s_%d' % (name,n) )
+
+    return names
+
+def get_arr2_colnames(name, dims):
+    """
+    Get db names for an array, naming 
+        name_{num1}_{num2}
+    """
+    names=[]
+    for n1 in xrange(1,dims[0]+1):
+        for n2 in xrange(1,dims[1]+1):
+            names.append( '%s_%d_%d' % (name,n1,n2) )
+
+    return names
+
+
+def get_oracle_type(nt):
+    if 'f4' in nt:
+        ot='binary_float'
+    elif 'f8' in nt:
+        ot='binary_double'
+    elif 'i1' in nt or 'u1' in nt:
+        ot='number(3)'
+    elif 'i2' in nt or 'u2' in nt:
+        ot='number(5)'
+    elif 'i4' in nt:
+        ot='number(10)'
+    elif 'i8' in nt:
+        ot='number(19)'
+    elif 'u8' in nt:
+        ot='number(20)'
+    elif 'S' in nt:
+        slen=nt[2:]
+        ot='varchar2(%s)' % slen
+    else:
+        raise ValueError("unsupported numpy type: '%s'" % nt)
+
+    return ot

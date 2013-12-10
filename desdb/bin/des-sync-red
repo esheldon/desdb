@@ -19,7 +19,7 @@
 function usage_and_exit {
     echo "
 Usage 
-        des-wget-red [-q -p PROJECT] run [expname]
+        des-sync-red [-q -p PROJECT] run [expname]
 
 Description
 
