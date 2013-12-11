@@ -5,12 +5,35 @@
 Convert the fits file to an ascii control file that can be loaded into a
 database table using sqlldr
 
-The resulting control file can be loaded to a database table using the sqlldr
-command provided by oracle
-
     sqlldr username/pass@host:port/dbname control=control_file
 
-Optionally write the create table statement.
+Optionally write the create table statement to a file named
+
+    {control_file}.create.sql
+
+Array columns in the fits file are converted to scalar columns following
+the convention
+
+    name -> name_i
+
+where i runs over the number of elements, 1-offset.  For 2-d arrays
+
+    name -> name_i_j
+
+You can also send --band-cols= to specify array columns that
+hold information for each band.  the --bands keyword holds the
+band character that correspond to each index.  E.g.
+
+    des-fits2table --bands g,r,i,z --band-cols flux,flux_cov
+
+these columns get written as so
+
+    flux_g
+    flux_r
+    ...
+    flux_cov_g_g
+    flux_cov_g_r
+    ...
 """
 
 import sys
@@ -20,6 +43,9 @@ import desdb
 
 from optparse import OptionParser
 parser=OptionParser(__doc__)
+parser.add_option('--create',action='store_true',
+                  help=("write the create table statement to "
+                        "{control_file}.create.sql"))
 parser.add_option('--bands',default=None,
                   help=("comma separated list of band characters, "
                         "to convert index number to band characer "
@@ -32,9 +58,6 @@ parser.add_option('--band-cols',default=None,
                         "to band character for these columns"))
 parser.add_option('--ext',default=None,
                   help=("extension to read.  Default is first with data"))
-parser.add_option('--create',action='store_true',
-                  help=("write the create table statement to "
-                        "control_file.create.sql"))
 
 def read_data(filename, ext=None):
     try:
