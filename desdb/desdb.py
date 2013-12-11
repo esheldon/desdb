@@ -11,7 +11,7 @@ try:
     import cx_Oracle
 except ImportError as e:
     # make sure we send a message
-    sys.stderr.write("Could not import cx_Oracle")
+    sys.stderr.write("Could not import cx_Oracle: %s" % str(e))
     raise e
 
 try:
