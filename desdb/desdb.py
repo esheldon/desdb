@@ -1313,6 +1313,6 @@ class ArrayStringifier:
         aflat=arr.ravel()
 
         for i in xrange(aflat.size):
-            values.append( str(aflat[i]) )
+            values.append( repr(aflat[i]) )
 
         return self._delim.join(values)
