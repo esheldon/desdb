@@ -38,7 +38,7 @@ these columns get written as so
 Internally, the following function is run
 
     import desdb
-    desdb.desdb.array2table
+    desdb.array2table(...)
 """
 
 import sys
