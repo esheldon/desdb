@@ -979,16 +979,21 @@ def array2table(arr, table_name, control_file,
 
     print 'writing control file',control_file
     with open(control_file,'w') as fobj:
-        top="""
+
+        head=_ctl_template.format(table_name=table_name,
+                                  name_list=name_list)
+        fobj.write(head)
+        _write_sqlldr_data(arr, fobj)
+
+
+_ctl_template="""
 load data
     infile *
     append into table {table_name}
     fields terminated by ","
     ( {name_list} )
-begindata\n""".format(table_name=table_name,
-                      name_list=name_list)
-        fobj.write(top)
-        _write_sqlldr_data(arr, fobj)
+begindata\n"""
+
 
 def _write_sqlldr_data(arr, fobj):
     try:
@@ -1001,10 +1006,9 @@ def _write_sqlldr_data(arr, fobj):
         except:
             have_recfile=False
 
-    have_recfile=False
     if have_recfile:
-        rf=recfile.Recfile(fobj, mode='w+', delim=',', ignorenull=True)
-        rf.Write(arr)
+        writer=recfile.Recfile(fobj, mode='w+', delim=',', ignorenull=True)
+        writer.Write(arr)
     else:
         writer=ArrayWriter(delim=',', file=fobj)
         writer.write(arr)
@@ -1268,7 +1272,8 @@ class ArrayWriter:
                 if data.ndim > 0:
                     strval=astr.stringify(data)
                 else:
-                    strval = str(data)
+                    strval = repr(data)
+                    #strval = str(data)
 
                 line.append(strval)
 
@@ -1278,8 +1283,14 @@ class ArrayWriter:
 
         self._fobj.flush()
 
+    def __enter__(self):
+        return self
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.close()
+
     def close(self):
         if self._close_the_fobj:
+            print 'closing'
             self._fobj.close()
 
     def __del__(self):
