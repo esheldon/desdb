@@ -7,7 +7,12 @@ import sys
 from sys import stdout,stderr
 import csv
 
-import cx_Oracle
+try:
+    import cx_Oracle
+except ImportError as e:
+    # make sure we send a message
+    sys.stderr.write("Could not import cx_Oracle")
+    raise e
 
 try:
     import json
