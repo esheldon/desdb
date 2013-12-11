@@ -2,8 +2,13 @@
 """
     %prog [options] fits_file table_name control_file
 
-Convert the fits file to an ascii control file that can be loaded
-into a database table using sqlldr
+Convert the fits file to an ascii control file that can be loaded into a
+database table using sqlldr
+
+The resulting control file can be loaded to a database table using the sqlldr
+command provided by oracle
+
+    sqlldr username/pass@host:port/dbname control=control_file
 
 Optionally write the create table statement.
 """
@@ -18,7 +23,7 @@ parser=OptionParser(__doc__)
 parser.add_option('--bands',default=None,
                   help=("comma separated list of band characters, "
                         "to convert index number to band characer "
-                        "for arrays that contain band-dependent info.
+                        "for arrays that contain band-dependent info."
                         " for example g,r,i,z"))
 parser.add_option('--band-cols',default=None,
                   help=("comma separated list of array columns that "
@@ -27,9 +32,9 @@ parser.add_option('--band-cols',default=None,
                         "to band character for these columns"))
 parser.add_option('--ext',default=None,
                   help=("extension to read.  Default is first with data"))
-
 parser.add_option('--create',action='store_true',
-                  help=("write the create table statement to control_file.sql"))
+                  help=("write the create table statement to "
+                        "control_file.create.sql"))
 
 def read_data(filename, ext=None):
     try:

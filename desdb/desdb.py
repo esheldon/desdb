@@ -929,7 +929,7 @@ def array2table(arr, table_name, control_file,
     - Creating the table.  If the table already exists, skip this step 
         - send create=True
         - create the table using the statement written in
-        {control_file}-create-table.sql
+        {control_file}.create.sql
 
         That file will hold an sql statement with the create table statement.
         Note indexes must be added separately.
@@ -954,7 +954,7 @@ def array2table(arr, table_name, control_file,
         different name or to over-ride conversions for arrays.
     create: bool, optional
         If True, also write a file holding the create table statement.
-        {control_file}-create-table.sql
+        {control_file}.create.sql
     """
     import numpy
 
@@ -964,13 +964,13 @@ def array2table(arr, table_name, control_file,
                                              defs=defs)
 
     if create:
-        create_file="%s.create-table.sql" % control_file
+        create_file="%s.create.sql" % control_file
         print 'writing create table statement',create_file
         with open(create_file,'w') as fobj:
             fobj.write(create_statement)
 
     names = [d[0] for d in alldefs]
-    name_list=', '.join(names)
+    name_list=',\n      '.join(names)
 
     print 'writing control file',control_file
     with open(control_file,'w') as fobj:
@@ -981,7 +981,7 @@ load data
     fields terminated by ","
     ( {name_list} )
 begindata\n""".format(table_name=table_name,
-                              name_list=name_list)
+                      name_list=name_list)
         fobj.write(top)
         _write_sqlldr_data(arr, fobj)
 
