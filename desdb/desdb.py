@@ -917,7 +917,8 @@ def get_numpy_type(odesc,
 
     return Ntype
 
-def array2table(arr, table_name, control_file, defs={}, create=False):
+def array2table(arr, table_name, control_file,
+                bands=None, band_cols=None, defs={}, create=False):
     """
 
     Write a numpy array with fields to an ascii file for uploading.  The ascii
@@ -958,7 +959,9 @@ def array2table(arr, table_name, control_file, defs={}, create=False):
     import numpy
 
     arr=arr.view(numpy.ndarray)
-    create_statement, alldefs = get_tabledef(arr.dtype.descr, table_name, defs=defs)
+    create_statement, alldefs = get_tabledef(arr.dtype.descr, table_name,
+                                             bands=bands, band_cols=band_cols,
+                                             defs=defs)
 
     if create:
         create_file="%s.create-table.sql" % control_file
@@ -974,8 +977,7 @@ def array2table(arr, table_name, control_file, defs={}, create=False):
         top="""
 load data
     infile *
-    append into table
-        {table_name}
+    append into table {table_name}
     fields terminated by ","
     ( {name_list} )
 begindata\n""".format(table_name=table_name,
@@ -1000,7 +1002,7 @@ def _write_sqlldr_data(arr, fobj):
     else:
         raise RuntimeError("implement writing without recfile")
 
-def get_tabledef(descr, table_name, defs={}):
+def get_tabledef(descr, table_name, bands=None, band_cols=None, defs={}):
     """
     Convert a numpy descriptor to oracle table creation
     statement
@@ -1023,7 +1025,7 @@ def get_tabledef(descr, table_name, defs={}):
     The create table statement as well as the array of individual column definitions
     """
 
-    alldefs = get_coldefs(descr, defs=defs)
+    alldefs = get_coldefs(descr, bands=bands, band_cols=band_cols, defs=defs)
 
     sdefs=[]
     for d in alldefs:
@@ -1037,7 +1039,7 @@ def get_tabledef(descr, table_name, defs={}):
     statement='\n'.join(statement)
     return statement, alldefs
 
-def get_coldefs(descr, defs={}):
+def get_coldefs(descr, defs={}, bands=None, band_cols=None):
     """
     Convert a numpy descriptor to a set of oracle 
     column definitions
@@ -1073,7 +1075,13 @@ def get_coldefs(descr, defs={}):
             dims=d[2]
             if not isinstance(dims,tuple):
                 dims=(dims,)
-            names=get_arr_colnames(name,dims)
+
+            if (bands is not None
+                    and band_cols is not None
+                    and name in band_cols):
+                names=get_band_arr_colnames(name,dims,bands)
+            else:
+                names=get_arr_colnames(name,dims)
             
             for n in names:
                 defi=def_template % (ot)
@@ -1118,6 +1126,48 @@ def get_arr2_colnames(name, dims):
             names.append( '%s_%d_%d' % (name,n1,n2) )
 
     return names
+
+def get_band_arr_colnames(name, dims, bands):
+    """
+    Get db names for an array, naming 
+        name_{num1}_{num2}...
+    """
+    ndim=len(dims)
+    if ndim==1:
+        names=get_band_arr1_colnames(name,dims,bands)
+    elif ndim==2:
+        names=get_band_arr2_colnames(name,dims,bands)
+    else:
+        raise ValueError("only support 1 and 2 d arrays")
+
+    return names
+
+def get_band_arr1_colnames(name, dims, bands):
+    """
+    Get db names for an array, naming 
+        name_{num}
+    """
+    names=[]
+    for i in xrange(dims[0]):
+        n=bands[i]
+        names.append( '%s_%s' % (name,n) )
+
+    return names
+
+def get_band_arr2_colnames(name, dims, bands):
+    """
+    Get db names for an array, naming 
+        name_{num1}_{num2}
+    """
+    names=[]
+    for i1 in xrange(dims[0]):
+        n1=bands[i1]
+        for i2 in xrange(dims[1]):
+            n2=bands[i2]
+            names.append( '%s_%s_%s' % (name,n1,n2) )
+
+    return names
+
 
 
 def get_oracle_type(nt):
