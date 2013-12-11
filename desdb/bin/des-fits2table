@@ -34,6 +34,11 @@ these columns get written as so
     flux_cov_g_g
     flux_cov_g_r
     ...
+
+Internally, the following function is run
+
+    import desdb
+    desdb.desdb.array2table
 """
 
 import sys
@@ -57,7 +62,8 @@ parser.add_option('--band-cols',default=None,
                         "bands keyword is used to convert index name "
                         "to band character for these columns"))
 parser.add_option('--ext',default=None,
-                  help=("extension to read.  Default is first with data"))
+                  help=("extension to read, number or string. "
+                        "Default is first with data"))
 
 def read_data(filename, ext=None):
     try:
