@@ -1001,11 +1001,13 @@ def _write_sqlldr_data(arr, fobj):
         except:
             have_recfile=False
 
+    have_recfile=False
     if have_recfile:
         rf=recfile.Recfile(fobj, mode='w+', delim=',', ignorenull=True)
         rf.Write(arr)
     else:
-        raise RuntimeError("implement writing without recfile")
+        writer=ArrayWriter(delim=',', file=fobj)
+        writer.write(arr)
 
 def get_tabledef(descr, table_name, bands=None, band_cols=None, defs={}):
     """
@@ -1197,3 +1199,109 @@ def get_oracle_type(nt):
         raise ValueError("unsupported numpy type: '%s'" % nt)
 
     return ot
+
+
+class ArrayWriter:
+    """
+    A python class to write numpy rec arrays as ascii column data.
+    
+    This is a python-only replacement of the recfile package.
+    https://code.google.com/p/recfile/
+
+    parameters
+    ----------
+    file: optional
+        File name or file object to use for printing.  Default
+        is stdout.
+    delim: string
+        The delimiter between fields, default is a comma
+
+    Examples:
+
+        # simple column printing as CSV
+        >>> aw = ArrayWriter(delim=',')
+        >>> aw.write(arr)
+        1383.91540527,200.237106323,0.266301675406
+        802.613586426,249.544662476,0.921706936925
+        968.170288086,206.072280884,0.702349236707
+        ...
+
+    """
+
+    def __init__(self, **keys):
+
+        self._delim = keys.get('delim',',')
+
+        fobj = keys.get('file',stdout)
+        if isinstance(fobj,file):
+            self._fobj = fobj
+            self._close_the_fobj = False
+        else:
+            fname = os.path.expanduser(fobj)
+            fname = os.path.expandvars(fname)
+            self._fobj = open(fname,'w')
+            self._close_the_fobj=True
+
+    def write(self, arrin):
+        """
+        Write the array with fields to the file
+
+        parameters
+        ----------
+        arr: numpy array
+            An array with fields, e.g. a recarray
+        """
+        import numpy
+
+        arr=arrin.view(numpy.ndarray)
+        nlines=arr.size
+        names = arr.dtype.names
+        delim=self._delim
+
+        astr = ArrayStringifier(delim=delim)
+
+        for i in xrange(nlines):
+            line=[]
+            for n in names:
+
+                data = arr[n][i]
+                if data.ndim > 0:
+                    strval=astr.stringify(data)
+                else:
+                    strval = str(data)
+
+                line.append(strval)
+
+            line=delim.join(line)
+            self._fobj.write(line)
+            self._fobj.write('\n')
+
+        self._fobj.flush()
+
+    def close(self):
+        if self._close_the_fobj:
+            self._fobj.close()
+
+    def __del__(self):
+        if self._close_the_fobj:
+            self._fobj.close()
+
+
+class ArrayStringifier:
+    """
+    Stringify a simple array using a delimiter
+    """
+    def __init__(self, delim=','):
+        self._delim=delim
+
+    def stringify(self, arr):
+        values=[]
+        if arr.dtype.names is not None:
+            raise ValueError("array must be simple, not structured")
+
+        aflat=arr.ravel()
+
+        for i in xrange(aflat.size):
+            values.append( str(aflat[i]) )
+
+        return self._delim.join(values)
