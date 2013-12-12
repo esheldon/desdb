@@ -20,6 +20,7 @@ where i runs over the number of elements, 1-offset.  For 2-d arrays
 
     name -> name_i_j
 
+
 You can also send --band-cols= to specify array columns that
 hold information for each band.  the --bands keyword holds the
 band character that correspond to each index.  E.g.
@@ -39,6 +40,14 @@ Internally, the following function is run
 
     import desdb
     desdb.array2table(...)
+
+
+caveats
+
+    You should use the fitsio package if your columns are arrays with more than
+    one dimension.  pyfits does not read array columns correctly, so this will
+    fail!
+
 """
 
 import sys
@@ -65,21 +74,39 @@ parser.add_option('--ext',default=None,
                   help=("extension to read, number or string. "
                         "Default is first with data"))
 
-def read_data(filename, ext=None):
+try:
+    import fitsio
+    have_fitsio=True
+except:
+    have_fitsio=False
+
+try:
+    import pyfits
+    have_pyfits=True
+except:
     try:
-        import fitsio
-        data=fitsio.read(filename, ext=ext)
+        import astropy.io.fits as pyfits
+        have_pyfits=True
     except:
-        try:
-            # ....hate ....pyfits
-            import pyfits
-            ext_num,ext_string=get_ext(ext)
-            if ext_num is not None:
-                data=pyfits.getdata(filename, ext=ext_num)
-            else:
-                data=pyfits.getdata(filename, extname=ext_string)
-        except:
-            raise ImportError("could not import fitsio or pyfits")
+        have_pyfits=False
+
+def read_data_fitsio(filename, extin=None):
+    print 'reading fitsio'
+    try:
+        ext=int(extin)
+    except:
+        ext=extin
+
+    return fitsio.read(filename, ext=ext)
+
+def read_data_pyfits(filename, ext=None):
+    print 'reading pyfits'
+    # need two separate names becuase pyfits won't take a string through ext=
+    ext_num,ext_string=get_ext_pyfits(ext)
+    if ext_num is not None:
+        data=pyfits.getdata(filename, ext=ext_num)
+    else:
+        data=pyfits.getdata(filename, extname=ext_string)
 
     return data
 
@@ -89,9 +116,9 @@ def csv2list(data):
 
     return data
 
-def get_ext(ext_string):
+def get_ext_pyfits(ext_string):
     """
-    For pyfits stupidity
+    Need to return both due to pyfits stupidity
     """
     try:
         ext_num=int(ext_string)
@@ -114,12 +141,16 @@ def main():
     bands=csv2list(options.bands)
     band_cols=csv2list(options.band_cols)
 
-    data=read_data(fits_file, ext=options.ext)
+    if have_fitsio:
+        data=read_data_fitsio(fits_file, options.ext)
+    elif have_pyfits:
+        data=read_data_pyfits(fits_file, options.ext)
+    else:
+        raise ImportError("could not load fitsio or pyfits")
 
     desdb.desdb.array2table(data, table_name, control_file,
                             bands=bands,
                             band_cols=band_cols,
                             create=options.create)
 
-if __name__=="__main__":
-    main()
+main()
