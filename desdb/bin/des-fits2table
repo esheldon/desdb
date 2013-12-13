@@ -2,8 +2,8 @@
 """
     %prog [options] fits_file table_name control_file
 
-Convert the fits file to an ascii control file that can be loaded into a
-database table using sqlldr
+Convert the fits file to an ascii csv file to be loaded into a database table.
+Write the control file needed by sqlldr
 
     sqlldr username/pass@host:port/dbname control=control_file
 
@@ -64,6 +64,8 @@ parser.add_option('--bands',default=None,
                         "to convert index number to band characer "
                         "for arrays that contain band-dependent info."
                         " for example g,r,i,z"))
+parser.add_option('--primary-key',default=None,
+                  help="the column to be used as primary key")
 parser.add_option('--band-cols',default=None,
                   help=("comma separated list of array columns that "
                         "contain band-dependent information.  The "
@@ -150,6 +152,7 @@ def main():
     desdb.desdb.array2table(data, table_name, control_file,
                             bands=bands,
                             band_cols=band_cols,
-                            create=options.create)
+                            create=options.create,
+                            primary_key=options.primary_key)
 
 main()
