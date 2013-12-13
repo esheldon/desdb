@@ -200,24 +200,6 @@ class Connection(cx_Oracle.Connection):
         # separate queries because the fgetmetadata is a slow
         # function call
         if not comments:
-            #q="""
-            #    SELECT
-            #        column_name, 
-            #        CAST(data_type as VARCHAR2(15)) as type, 
-            #        CAST(data_length as VARCHAR(6)) as length, 
-            #        CAST(data_precision as VARCHAR(9)) as precision, 
-            #        CAST(data_scale as VARCHAR(5)) as scale
-            #    FROM
-            #        all_tab_columns
-            #    WHERE
-            #        table_name = '{table}'
-            #        AND column_name <> 'TNAME'
-            #        AND column_name <> 'CREATOR'
-            #        AND column_name <> 'TABLETYPE'
-            #        AND column_name <> 'REMARKS'
-            #    ORDER BY 
-            #        column_id
-            #"""
             q="""
                 SELECT 
                     column_name,
@@ -265,7 +247,7 @@ class Connection(cx_Oracle.Connection):
             SELECT
                 index_name, column_name, column_position, descend
             FROM
-                all_ind_columns
+                dba_ind_columns
             WHERE
                 table_name = '%s' order by index_name, column_position
         """ % table.upper()
@@ -923,11 +905,15 @@ def get_numpy_type(odesc,
     return Ntype
 
 def array2table(arr, table_name, control_file,
-                bands=None, band_cols=None, defs={}, create=False):
+                bands=None,
+                band_cols=None,
+                defs={},
+                primary_key=None,
+                create=False):
     """
 
-    Write a numpy array with fields to an ascii file for uploading.  The ascii
-    file contains in it the commands need to produce the load.  Optionally
+    Write a numpy array with fields to a csv file, along with the oracle
+    control file needed for the sqlldr command to upload the data.  Optionally
     written is a file holding an sql query to create the required table if it
     doesn't exist.
 
@@ -966,8 +952,10 @@ def array2table(arr, table_name, control_file,
     arr=arr.view(numpy.ndarray)
     create_statement, alldefs = get_tabledef(arr.dtype.descr, table_name,
                                              bands=bands, band_cols=band_cols,
-                                             defs=defs)
+                                             defs=defs,
+                                             primary_key=primary_key)
 
+    data_file="%s.csv" % control_file
     if create:
         create_file="%s.create.sql" % control_file
         print 'writing create table statement',create_file
@@ -981,18 +969,21 @@ def array2table(arr, table_name, control_file,
     with open(control_file,'w') as fobj:
 
         head=_ctl_template.format(table_name=table_name,
-                                  name_list=name_list)
+                                  name_list=name_list,
+                                  infile=data_file)
         fobj.write(head)
+
+    print 'writing data file',data_file
+    with open(data_file,'w') as fobj:
         _write_sqlldr_data(arr, fobj)
 
 
 _ctl_template="""
 load data
-    infile *
+    infile '{infile}'
     append into table {table_name}
     fields terminated by ","
-    ( {name_list} )
-begindata\n"""
+    ( {name_list} )\n"""
 
 
 def _write_sqlldr_data(arr, fobj):
@@ -1013,7 +1004,8 @@ def _write_sqlldr_data(arr, fobj):
         writer=ArrayWriter(delim=',', file=fobj)
         writer.write(arr)
 
-def get_tabledef(descr, table_name, bands=None, band_cols=None, defs={}):
+def get_tabledef(descr, table_name,
+                 bands=None, band_cols=None, defs={}, primary_key=None):
     """
     Convert a numpy descriptor to oracle table creation
     statement
@@ -1036,21 +1028,22 @@ def get_tabledef(descr, table_name, bands=None, band_cols=None, defs={}):
     The create table statement as well as the array of individual column definitions
     """
 
-    alldefs = get_coldefs(descr, bands=bands, band_cols=band_cols, defs=defs)
+    alldefs = get_coldefs(descr, bands=bands, band_cols=band_cols, defs=defs,
+                          primary_key=primary_key)
 
     sdefs=[]
     for d in alldefs:
         sdefs.append('%s %s' % d)
 
-    sdefs=',\n'.join(sdefs)
-    statement=['create table {table_name} ('.format(table_name=table_name)]
+    sdefs=',\n    '.join(sdefs)
+    statement=['create table {table_name} (\n    '.format(table_name=table_name)]
     statement.append(sdefs)
-    statement.append(') compress\n')
+    statement.append('\n) compress\n')
 
-    statement='\n'.join(statement)
+    statement=''.join(statement)
     return statement, alldefs
 
-def get_coldefs(descr, defs={}, bands=None, band_cols=None):
+def get_coldefs(descr, defs={}, bands=None, band_cols=None, primary_key=None):
     """
     Convert a numpy descriptor to a set of oracle 
     column definitions
@@ -1069,6 +1062,8 @@ def get_coldefs(descr, defs={}, bands=None, band_cols=None):
 
     if defs is None:
         defs={}
+    if primary_key is not None:
+        primary_key=primary_key.lower()
 
     alldefs=[]
     def_template='%s not null'
@@ -1080,7 +1075,10 @@ def get_coldefs(descr, defs={}, bands=None, band_cols=None):
             alldefs += defs[name]
         elif len(d) == 2:
             # this is a scalar column... easy!
-            defi=def_template % ot
+            if name.lower() == primary_key:
+                defi = '%s primary key' % ot
+            else:
+                defi=def_template % ot
             alldefs.append( (name,defi) )
         else:
             dims=d[2]

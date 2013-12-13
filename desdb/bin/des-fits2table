@@ -44,9 +44,8 @@ Internally, the following function is run
 
 caveats
 
-    You should use the fitsio package if your columns are arrays with more than
-    one dimension.  pyfits does not read array columns correctly, so this will
-    fail!
+    You should use the fitsio package if you have array columns with more than
+    one dimension.  pyfits will read them as 1-d so the index naming will fail!
 
 """
 
