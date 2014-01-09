@@ -889,6 +889,9 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
 _meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
 
+# wq dir should be local, since the wqlog files will be opened there
+_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts/$COADD_RUN'
+
 _fs['meds_run'] = {'dir':'$DESDATA/meds/$MEDSCONF'}
 
 _fs['meds'] = {'dir': _meds_dir,
@@ -906,7 +909,7 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
-_fs['meds_wq'] = {'dir':_meds_script_dir,
+_fs['meds_wq'] = {'dir':_meds_wq_dir,
                   'name':'$TILENAME-$BAND-meds.yaml'}
 
 
