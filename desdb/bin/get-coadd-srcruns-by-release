@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+"""
+    %prog [options] release
+
+Print all source 'red' runs for input coadd release.
+
+Examples are
+    
+    sva1_coadd
+    sva1_coadd_spte
+"""
+
+import os
+import sys
+from sys import stdout,stderr
+import desdb
+
+from optparse import OptionParser
+parser=OptionParser(__doc__)
+parser.add_option("-u","--user",default=None, help="Username.")
+parser.add_option("-p","--password",default=None, help="Password.")
+parser.add_option("--host",default=None, help="over-ride default host")
+
+parser.add_option("--withbands",
+                  default='g,r,i,z',
+                  help="require these bands, csv.  default %default")
+
+parser.add_option('--byexp',
+                  action='store_true',
+                  help="Print 'run exposurename'")
+
+def print_by_run(cf):
+    d={}
+    for r in cf.srclist:
+        d[r['run']] = 3
+
+    for run in sorted(d):
+        print run
+
+def print_by_exp(cf):
+    d={}
+
+    for r in cf.srclist:
+        key='%s %s' % (r['run'], r['expname'])
+        d[key]=3
+
+    for k in sorted(d):
+        print k
+
+
+def main():
+
+    options,args = parser.parse_args(sys.argv[1:])
+
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(45)
+
+    releases=args
+
+    withbands=options.withbands
+    withbands=withbands.split(',')
+
+    coadd_runs=desdb.files.get_release_runs(releases,
+                                            withbands=withbands,
+                                            user=options.user,
+                                            password=options.password,
+                                            host=options.host)
+    for coadd_run in coadd_runs:
+        for band in withbands:
+            cf=desdb.files.Coadd(coadd_run=coadd_run,
+                                 band=band,
+                                 user=options.user,
+                                 password=options.password,
+                                 host=options.host)
+
+            cf.load(srclist=True)
+
+            if options.byexp:
+                print_by_exp(cf)
+            else:
+                print_by_run(cf)
+
+
+if __name__=="__main__":
+    main()
