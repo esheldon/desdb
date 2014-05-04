@@ -2,8 +2,7 @@
 """
     %prog [options] coadd_run band
 
-Different from get-coadd-srclists-by-releas.  This just prints the
-source runs associated with the input coadd run and band
+Prints the source runs associated with the input coadd run and band
 
 If --byexp, print out the unique runs and exposurenames
 
