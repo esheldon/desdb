@@ -11,6 +11,7 @@ scripts= ['des-query',
           'get-coadd-info-by-run',
           'get-coadd-srclist',
           'get-coadd-srcruns-by-run',
+          'get-coadd-srcruns-by-release',
           'get-release-filelist',
           'get-red-info-by-release',
           'get-release-runs']
