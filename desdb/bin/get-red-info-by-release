@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 """
-    %prog [options] release band
+    %prog [options] release
 
-Look up all red catalogs and images in the input release and write out their
-file ids, path info, and external url.  A release id is something like 'dr012'
-(dc6b)
+Look up all red catalogs and images in the input release and write out some
+info in a json format.  Fields are currentlyl
+    image_url
+    expname
+    band
+    ccd
+    image_id
+    red_run
 
+A release id is something like 'y1a1_firstcut'
+
+If --fields is sent as comma separated values, those fields are printed in
+space-separated columns. Should be a subset of above.
+
+Note the results may not be unique if printing fields
 """
 import os
 import sys
@@ -19,6 +30,9 @@ parser.add_option("-b","--bands",default=None, help="Only these bands.")
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
+
+parser.add_option("--fields",default=None,
+                  help="just print the requested fields in columns")
 
 def main():
 
@@ -34,13 +48,23 @@ def main():
     if bands is not None:
         bands=bands.split(',')
 
+    fields=options.fields
+    if fields is not None:
+        fields=fields.split(',')
+
     dlist=desdb.files.get_red_info_by_release(release,
                                               bands=bands,
                                               show=True,
                                               user=options.user,
                                               password=options.password,
                                               host=options.host)
-    json.dump(dlist, stdout, indent=1, separators=(',', ':'))
+    if fields is not None:
+        for d in dlist:
+            data=[str(d[field]) for field in fields]
+            line=' '.join(data)
+            print line
+    else:
+        json.dump(dlist, stdout, indent=1, separators=(',', ':'))
 
 if __name__=="__main__":
     main()

@@ -156,7 +156,9 @@ def gen_release_runs():
         json.dump( release_map, fobj, indent=1, separators=(',', ':'))
 
 
-SKIP_CCD=61
+SKIP_CCDS=[61]
+# this is a csv, e.g. 32,55,62
+SKIP_CCDS_CSV='61'
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
@@ -237,15 +239,48 @@ def get_coadd_info_by_release(release, band, withbands=None):
     data = get_coadd_info_by_runlist(runlist, band)
     return data
 
-def get_red_info_by_runlist(runlist, explist=None,
-                            user=None,
-                            password=None,
-                            host=None):
+def get_coadd_srclist_by_release(release, withbands, **keys):
+    """
+    Get all the coadd runs associated with the release, and then
+    grab the source information for the SE images that made up
+    the coadd
+
+    See the _load_srclist method in the Coadd object for what
+    fields will be present
+    """
+
+    print >>stderr,'getting coadd_runs with bands:',withbands
+    coadd_runs=get_release_runs(release,
+                                withbands=withbands,
+                                **keys)
+
+    ncoadd=len(coadd_runs)
+    print >>stderr,'extracting source lists'
+
+    data=[]
+    for i,coadd_run in enumerate(coadd_runs):
+        print >>stderr,'%d/%d' % (i+1,ncoadd),coadd_run,
+        for band in withbands:
+            print >>stderr,band,
+            cf=Coadd(coadd_run=coadd_run, band=band, **keys)
+
+            cf.load(srclist=True)
+
+            data += cf.srclist
+
+        print >>stderr,""
+
+    return data
+
+
+def get_red_info_by_runlist(runlist,
+                            explist=None,
+                            **keys):
     """
     runlist and explist are paired
     """
 
-    conn=desdb.Connection(user=user,password=password,host=host)
+    conn=desdb.Connection(**keys)
 
     desdata=get_des_rootdir()
     dlist=[]
@@ -268,11 +303,12 @@ def get_red_info_by_runlist(runlist, explist=None,
                 and loc.exposurename = '%(expname)s'
                 and loc.id=image.id
                 and image.imagetype='red'
-                and image.ccd != 61\n"""
+                and image.ccd not in (%(SKIP_CCDS)s)\n"""
 
             query=query % {'run':run,
                            'expname':expname,
-                           'desdata':desdata}
+                           'desdata':desdata,
+                           'SKIP_CCDS':SKIP_CCDS_CSV}
 
             data=conn.quick(query)
 
@@ -296,9 +332,11 @@ def get_red_info_by_runlist(runlist, explist=None,
                 image.run = '%(run)s'
                 and loc.id=image.id
                 and image.imagetype='red'
-                and image.ccd != 61\n"""
+                and image.ccd not in (%(SKIP_CCDS)s)\n"""
 
-            query=query % {'run':run, 'desdata':desdata}
+            query=query % {'run':run,
+                           'desdata':desdata,
+                           'SKIP_CCDS':SKIP_CCDS_CSV}
 
             data=conn.quick(query)
 
@@ -339,11 +377,12 @@ def get_red_info_by_runlist_old(runlist,
         image.run in (%(runcsv)s)
         and loc.id=image.id
         and image.imagetype='red'
-        and image.ccd != 61\n"""
+        and image.ccd not in (%(SKIP_CCDS)s)\n"""
 
     desdata=get_des_rootdir()
     query=query % {'runcsv':runcsv,
-                   'desdata':desdata}
+                   'desdata':desdata,
+                   'SKIP_CCDS':SKIP_CCDS_CSV}
 
     if doprint:
         conn.quickWrite(query,fmt=fmt,show=show)
@@ -362,7 +401,8 @@ def _read_runexp(fname):
     return runlist,explist
 
 
-def get_red_info_by_release(release, bands=None, 
+def get_red_info_by_release(release,
+                            bands=None, 
                             user=None,
                             password=None,
                             host=None,
@@ -383,8 +423,10 @@ def get_red_info_by_release(release, bands=None,
     return dlist
 
 
-def get_red_info_release_byexp(release, bands=None, 
-                               user=None,password=None,
+def get_red_info_release_byexp(release,
+                               bands=None, 
+                               user=None,
+                               password=None,
                                show=True,
                                doprint=False, fmt='json'):
 
@@ -645,9 +687,14 @@ class Coadd(dict):
         See Bob's email.
         """
 
+        desdata=get_des_rootdir()
         query="""
         SELECT
-            magzp,d.id,loc.run,loc.exposurename as expname,loc.ccd
+            magzp,
+            d.id,
+            loc.run,
+            loc.exposurename as expname,
+            loc.ccd
         FROM
             coadd_src,coadd,image c,image d, location loc
         WHERE
@@ -676,6 +723,7 @@ class Coadd(dict):
                            expname=r['expname'],
                            ccd=r['ccd'])
                 r[ftype] = url
+
             srclist.append(r)
 
         self.srclist=srclist
