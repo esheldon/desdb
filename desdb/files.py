@@ -1,6 +1,8 @@
 import copy
 import os
 from sys import stderr
+from pprint import pprint
+
 try:
     from . import desdb
 except:
@@ -257,7 +259,8 @@ def get_coadd_srclist_by_release(release, withbands, **keys):
     ncoadd=len(coadd_runs)
     print >>stderr,'extracting source lists'
 
-    data=[]
+    # use dict so we only get unique ones
+    fdict={}
     for i,coadd_run in enumerate(coadd_runs):
         print >>stderr,'%d/%d' % (i+1,ncoadd),coadd_run,
         for band in withbands:
@@ -265,11 +268,19 @@ def get_coadd_srclist_by_release(release, withbands, **keys):
             cf=Coadd(coadd_run=coadd_run, band=band, **keys)
 
             cf.load(srclist=True)
+            if i==0 and band==withbands[0]:
+                print >>stderr,'\n'
+                pprint(cf.srclist[0],stream=stderr)
+                print >>stderr,'\n'
 
-            data += cf.srclist
+            for fd in cf.srclist:
+                key='%s-%s' % (fd['expname'], fd['ccd'])
+                fdict[key] = fd
 
         print >>stderr,""
 
+    print >>stderr,'converting to list of dicts'
+    data = [fdict[key] for key in fdict]
     return data
 
 
@@ -444,7 +455,7 @@ def get_red_info_release_byexp(release,
             # should modify in place
             el.append(info)
             if len(el) > 62:
-                pprint.pprint(el)
+                pprint(el)
                 raise ValueError("%s grown beyond 62, why?" % expname)
     return d
 
@@ -691,6 +702,7 @@ class Coadd(dict):
         query="""
         SELECT
             magzp,
+            coadd.band as band,
             d.id,
             loc.run,
             loc.exposurename as expname,
@@ -978,7 +990,9 @@ _fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
 
 
 
-_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
+_fs['wlpipe_pbs']    = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
+_fs['wlpipe_condor'] = {'dir': _fs['wlpipe_run']['dir']+'/condor'}
+
 _fs['wlpipe_scratch'] = {'dir': '$TMPDIR/DES/wlpipe'}
 _fs['wlpipe_scratch_run'] = {'dir': _fs['wlpipe_scratch']['dir']+'/$RUN'}
 #_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/pbs'}
@@ -986,6 +1000,7 @@ _fs['wlpipe_scratch_run'] = {'dir': _fs['wlpipe_scratch']['dir']+'/$RUN'}
 _fs['wlpipe_flists'] = {'dir': _fs['wlpipe_run']['dir']+'/flists'}
 _fs['wlpipe_flist_red'] = {'dir': _fs['wlpipe_flists']['dir'],
                            'name':'$RUN_red_info.json'}
+
 
 # SE files by exposure name
 _fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
@@ -1051,8 +1066,8 @@ _fs['wlpipe_me_status_split'] = \
      'name': '$RUN-$TILENAME-$START-$END-status.txt'}
 
 # these names are independent of me or se
-_fs['wlpipe_master_script'] =  {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'master.sh'}
-_fs['wlpipe_commands'] = {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'commands.txt'}
+_fs['wlpipe_master_script'] =  {'dir': _fs['wlpipe_condor']['dir'], 'name': 'master.sh'}
+_fs['wlpipe_commands'] = {'dir': _fs['wlpipe_condor']['dir'], 'name': 'commands.txt'}
 
 
 
@@ -1062,22 +1077,32 @@ _fs['wlpipe_me_tile_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
                                  'name': '$TILENAME-minions.pbs'}
 
 
+# condor
 # different clusters per tile.
 _fs['wlpipe_me_tile_condor'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+    {'dir': _fs['wlpipe_condor']['dir']+'/submit',
      'name': '$TILENAME.condor'}
-_fs['wlpipe_me_tile_condor'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
-     'name': '$TILENAME.condor'}
-# all in one cluster
-_fs['wlpipe_me_condor'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                           'name': '$RUN.condor'}
+_fs['wlpipe_me_tile_condor_missing'] = \
+    {'dir': _fs['wlpipe_condor']['dir']+'/submit',
+     'name': '$TILENAME-missing.condor'}
 
-_fs['wlpipe_me_checker'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                            'name': '$RUN-check.sh'}
-_fs['wlpipe_me_tile_checker'] = {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
+
+_fs['wlpipe_me_tile_checker'] = {'dir': _fs['wlpipe_condor']['dir']+'/check',
                                  'name': '$TILENAME-check.sh'}
 
+# all in one cluster
+_fs['wlpipe_me_condor'] = {'dir': _fs['wlpipe_condor']['dir'],
+                           'name': '$RUN.condor'}
+_fs['wlpipe_me_condor_missing'] = {'dir': _fs['wlpipe_condor']['dir'],
+                                   'name': '$RUN-missing.condor'}
+
+
+_fs['wlpipe_me_checker'] = {'dir': _fs['wlpipe_condor']['dir'],
+                            'name': '$RUN-check.sh'}
+
+_fs['wlpipe_me_log_split'] = \
+    {'dir': _fs['wlpipe_condor']['dir']+'/logs/$TILENAME',
+     'name': '$TILENAME-$START-$END.log'}
 
 
 
@@ -1087,9 +1112,6 @@ _fs['wlpipe_me_script_split'] = \
 _fs['wlpipe_me_check_split'] = \
     {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
      'name': '$TILENAME-$START-$END-check.pbs'}
-_fs['wlpipe_me_log_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
-     'name': '$TILENAME-$START-$END-script.log'}
 
 
 
