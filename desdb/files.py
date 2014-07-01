@@ -158,9 +158,9 @@ def gen_release_runs():
         json.dump( release_map, fobj, indent=1, separators=(',', ':'))
 
 
-SKIP_CCDS=[61]
+SKIP_CCDS=[31,61]
 # this is a csv, e.g. 32,55,62
-SKIP_CCDS_CSV='61'
+SKIP_CCDS_CSV='31,61'
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
@@ -283,6 +283,68 @@ def get_coadd_srclist_by_release(release, withbands, **keys):
     data = [fdict[key] for key in fdict]
     return data
 
+_runexp_template="""
+select
+    '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+    loc.exposurename as expname,
+    loc.band,
+    image.ccd,
+    image.id as image_id,
+    image.run as red_run
+from
+    image, location loc
+where
+    image.run = '%(run)s'
+    and loc.exposurename = '%(expname)s'
+    and loc.id=image.id
+    and image.imagetype='red'
+    and image.ccd not in (%(skip_ccds)s)\n"""
+
+_run_template="""
+select
+    '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
+    loc.exposurename as expname,
+    loc.band,
+    image.ccd,
+    image.id as image_id,
+    image.run as red_run
+from
+    image, location loc
+where
+    image.run = '%(run)s'
+    and loc.id=image.id
+    and image.imagetype='red'
+    and image.ccd not in (%(skip_ccds)s)\n"""
+
+def get_red_info_by_run(run, expname=None, conn=None, **keys):
+    """
+    Get some red info for the input run and possibly exposurename
+
+    parameters
+    ----------
+    run: string
+        run identifier
+    expname: optional
+        exposurename
+    """
+
+    if conn is None:
+        conn=desdb.Connection(**keys)
+
+    desdata=get_des_rootdir()
+    if expname is not None:
+        query=_runexp_template % {'run':run,
+                                  'expname':expname,
+                                  'desdata':desdata,
+                                  'skip_ccds':SKIP_CCDS_CSV}
+    else:
+        query=_run_template % {'run':run,
+                               'desdata':desdata,
+                               'skip_ccds':SKIP_CCDS_CSV}
+
+    data=conn.quick(query)
+
+    return data
 
 def get_red_info_by_runlist(runlist,
                             explist=None,
@@ -299,28 +361,7 @@ def get_red_info_by_runlist(runlist,
     if explist is not None:
         for run,expname in zip(runlist,explist):
 
-            query="""
-            select
-                '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
-                loc.exposurename as expname,
-                loc.band,
-                image.ccd,
-                image.id as image_id,
-                image.run as red_run
-            from
-                image, location loc
-            where
-                image.run = '%(run)s'
-                and loc.exposurename = '%(expname)s'
-                and loc.id=image.id
-                and image.imagetype='red'
-                and image.ccd not in (%(SKIP_CCDS)s)\n"""
-
-            query=query % {'run':run,
-                           'expname':expname,
-                           'desdata':desdata,
-                           'SKIP_CCDS':SKIP_CCDS_CSV}
-
+            data = get_red_info_by_run(run, expname=expname)
             data=conn.quick(query)
 
             dlist += data
@@ -329,28 +370,8 @@ def get_red_info_by_runlist(runlist,
         for i,run in enumerate(runlist):
 
             print >>stderr,"    %d/%d %s" % (i+1,nrun,run)
-            query="""
-            select
-                '%(desdata)s/' || loc.project || '/red/' || image.run || '/red/' || loc.exposurename || '/' || image.imagename || '.fz' as image_url,
-                loc.exposurename as expname,
-                loc.band,
-                image.ccd,
-                image.id as image_id,
-                image.run as red_run
-            from
-                image, location loc
-            where
-                image.run = '%(run)s'
-                and loc.id=image.id
-                and image.imagetype='red'
-                and image.ccd not in (%(SKIP_CCDS)s)\n"""
 
-            query=query % {'run':run,
-                           'desdata':desdata,
-                           'SKIP_CCDS':SKIP_CCDS_CSV}
-
-            data=conn.quick(query)
-
+            data = get_red_info_by_run(run)
             dlist += data
 
     return dlist
