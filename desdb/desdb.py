@@ -940,7 +940,7 @@ def array2table(arr, table_name, control_file,
         all the control information for loading as well as the
         data itself.
     bands: sequence or None
-        A list of the bands; arrays named in band_cols will get _{band}
+        A list of the bands; array columns named in band_cols will get _{band}
         added to their names
     band_cols: sequence or None
         A list of the columns that should get band names.
