@@ -939,6 +939,11 @@ def array2table(arr, table_name, control_file,
         Name of the control file to write.  This file will hold
         all the control information for loading as well as the
         data itself.
+    bands: sequence or None
+        A list of the bands; arrays named in band_cols will get _{band}
+        added to their names
+    band_cols: sequence or None
+        A list of the columns that should get band names.
     defs: dict,optional
         A dict returning a list of field defs. It is keyed by field names from
         the array.  This can be used to over-ride the defaults, e.g. to use a
