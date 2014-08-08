@@ -35,6 +35,7 @@ parser.add_option("-s","--show",action='store_true', help="Show query on stderr.
 parser.add_option("-f","--format",default=None,
     help=("File format for output.  csv,space,tab,json,cjson,pyobj,pretty."
           "Default %default for ordinary queries."))
+parser.add_option('--nohead',action='store_true', help="do not print the header")
 
 parser.add_option("-d","--describe",default=None, 
                   help="Describe the given table.")
@@ -43,6 +44,7 @@ parser.add_option("-c","--comments",action='store_true',
 
 parser.add_option("-l","--list-tables",action='store_true', 
                   help="List available tables. Default format is 'pretty'")
+
 
 def get_conn(options):
     conn=desdb.Connection(user=options.user,
@@ -84,7 +86,13 @@ def main():
             format='csv'
 
         conn=get_conn(options)
-        res=conn.quickWrite(query,show=options.show,fmt=format)
+
+        if options.nohead:
+            header=False
+        else:
+            header='names'
+
+        res=conn.quickWrite(query,show=options.show,fmt=format,header=header)
 
 if __name__=="__main__":
     main()

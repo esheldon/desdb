@@ -322,7 +322,7 @@ def cursor2dictlist(curs, lower=True):
     return output
 
 def print_cursor(curs, fmt='csv', header='names', file=sys.stdout):
-    rw=CursorWriter(fmt=fmt, file=file, header='names')
+    rw=CursorWriter(fmt=fmt, file=file, header=header)
     rw.write(curs)
 
 def write_json(obj, fmt):
