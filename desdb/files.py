@@ -158,9 +158,12 @@ def gen_release_runs():
         json.dump( release_map, fobj, indent=1, separators=(',', ':'))
 
 
-SKIP_CCDS=[31,61]
+# 2,61 not processed.
+# 31 is processed in hope we can arrive at a fix, but won't use
+# in science or exposure checker for now.
+SKIP_CCDS=[2,31,61]
 # this is a csv, e.g. 32,55,62
-SKIP_CCDS_CSV='31,61'
+SKIP_CCDS_CSV=','.join([str(ccd) for ccd in SKIP_CCDS])
 
 def get_default_fs():
     return os.environ.get('DES_DEFAULT_FS','nfs')
@@ -316,7 +319,7 @@ where
     and image.imagetype='red'
     and image.ccd not in (%(skip_ccds)s)\n"""
 
-def get_red_info_by_run(run, expname=None, conn=None, **keys):
+def get_red_info_by_run(run, expname=None, skip_ccds=SKIP_CCDS, conn=None, **keys):
     """
     Get some red info for the input run and possibly exposurename
 
@@ -331,16 +334,17 @@ def get_red_info_by_run(run, expname=None, conn=None, **keys):
     if conn is None:
         conn=desdb.Connection(**keys)
 
+    skip_ccds=','.join(skip_ccds)
     desdata=get_des_rootdir()
     if expname is not None:
         query=_runexp_template % {'run':run,
                                   'expname':expname,
                                   'desdata':desdata,
-                                  'skip_ccds':SKIP_CCDS_CSV}
+                                  'skip_ccds':skip_ccds}
     else:
         query=_run_template % {'run':run,
                                'desdata':desdata,
-                               'skip_ccds':SKIP_CCDS_CSV}
+                               'skip_ccds':skip_ccds}
 
     data=conn.quick(query)
 
@@ -918,6 +922,29 @@ class DESFiles:
         return expand_desvars(url, **keys)
 
 
+def get_dir_generic(subdirs):
+    if not isinstance(subdirs, list):
+        raise ValueError("subdirs must be a list")
+
+    root=get_des_rootdir()
+    dirs=[root] + subdirs
+
+    dir=os.path.join(*dirs)
+    return dir
+ 
+def get_path_generic(subdirs, fileparts, join_char='_', ext='fits'):
+
+    dir=get_dir_generic(subdirs)
+
+    if not isinstance(fileparts, list):
+        raise ValueError("fileparts must be a list")
+
+    fname=join_char.join(fileparts)
+    fname = '%s.%s' % (fname,ext)
+
+    return os.path.join(dir, fname)
+
+
 # notes 
 #   - .fz might not always hold
 #   - EXPNAME can also be built from POINTING-BAND-VISIT
@@ -946,6 +973,10 @@ _fs['red_seg']   = {'remote_dir':_fs['red_qa']['remote_dir'],
                     'dir':       _fs['red_qa']['dir'], 
                     'name':'$EXPNAME_$CCD_seg.fits.fz'}
 
+
+_fs['se_generic'] = {'dir': '$DESDATA/$DESPROJ/$FILECLASS/$RUN/$FILETYPE',
+                     'name':'$EXPNAME_$CCD_header.fits'
+                                  }
 
 
 _fs['coadd_run'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/coadd',
@@ -979,6 +1010,8 @@ _fs['meds'] = {'dir': _meds_dir,
                'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits.fz'}
 _fs['meds_input'] = {'dir': _meds_dir,
                      'name':'$TILENAME-$BAND-meds-input-$MEDSCONF.dat'}
+_fs['meds_coadd_objects_id'] = {'dir': _meds_dir,
+                                'name':'$TILENAME-$BAND-meds-coadd-objects-id-$MEDSCONF.dat'}
 _fs['meds_srclist'] = {'dir': _meds_dir,
                        'name':'$TILENAME-$BAND-meds-srclist-$MEDSCONF.dat'}
 _fs['meds_status'] = {'dir':_meds_dir,
@@ -1232,6 +1265,13 @@ def expand_desvars(string_in, **keys):
         if filetype is None:
             raise ValueError("filetype keyword must be sent: '%s'" % string_in)
         string = string.replace('$FILETYPE', str(filetype))
+
+    if string.find('$FILECLASS') != -1:
+        fileclass=keys.get('fileclass', None)
+        if fileclass is None:
+            raise ValueError("fileclass keyword must be sent: '%s'" % string_in)
+        string = string.replace('$FILECLASS', str(fileclass))
+
 
     if string.find('$START') != -1:
         start=keys.get('start', None)
