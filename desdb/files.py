@@ -1016,6 +1016,9 @@ _fs['meds_srclist'] = {'dir': _meds_dir,
                        'name':'$TILENAME-$BAND-meds-srclist-$MEDSCONF.dat'}
 _fs['meds_status'] = {'dir':_meds_dir,
                       'name':'$TILENAME-$BAND-meds-status-$MEDSCONF.yaml'}
+_fs['meds_stats'] = {'dir':_meds_dir,
+                     'name':'$TILENAME-$BAND-meds-stats-$MEDSCONF.yaml'}
+
 
 _fs['meds_script'] = {'dir':_meds_script_dir,
                       'name':'$TILENAME-$BAND-meds.sh'}
