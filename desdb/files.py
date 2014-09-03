@@ -66,6 +66,29 @@ def get_coadd_run_bands(run, conn=None, **keys):
 
     return [r['band'] for r in res]
 
+def get_testbed_runs(runconfig):
+    import deswl
+
+    testbed=runconfig["testbed"]
+    print "using testbed:",testbed
+
+    testbed_name=testbed["name"]
+
+    release=testbed["release"]
+    allruns=get_release_runs(release, withbands=runconfig['withbands'])
+
+    keeptiles=deswl.desmeds.testbeds[testbed_name]
+
+    runs=[]
+    for tile in keeptiles:
+        for run in allruns:
+            if tile in run:
+                runs.append(run)
+                continue
+
+    print "kept %d/%d runs" % (len(runs), len(allruns))
+    return runs
+
 def get_release_runs(release, **keys):
     rl = get_sql_release_list(release)
 
@@ -999,10 +1022,12 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
 # will be changing constantly
 
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
-_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
+#_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
+_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts'
 
 # wq dir should be local, since the wqlog files will be opened there
-_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts/$COADD_RUN'
+#_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts/$COADD_RUN'
+_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts'
 
 _fs['meds_run'] = {'dir':'$DESDATA/meds/$MEDSCONF'}
 
