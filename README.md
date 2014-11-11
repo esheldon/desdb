@@ -166,17 +166,17 @@ To install under a particular prefix
 
 For file downloads you only need this package and wget.
 
-
 For database queries, you need to install the oracle libraries and the
-cx_Oracle python library.  For linux you can download and install the default
-versions.
+cx_Oracle python library.  I have bundled these below, and the cx_Oracle
+has been patched to allow reading from nullable columns into numpy arrays.
 
-The version of cx_Oracle for OSX is broken on recent versions of the operating
-system. Thus we have bundled a patched version in the macosx files below.
+In addition, the official version of cx_Oracle for OSX is broken on recent versions of the
+operating system, so a patched cx_Oracle is needed anyway.
+
 Choose the one for your architecture.  Every update to the operating system
-over the last couple of years has broken this module, so any feedback you can
-give is very welcome, especially if you can work out a general strategy for
-compile flags on all versions of the OS
+over the last couple of years has broken this module for OSX, so any feedback
+you can give is very welcome, especially if you can work out a general strategy
+for compile flags on all versions of the OS
 
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz
     http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-macosx-x86-64-v3.tar.gz
