@@ -1017,6 +1017,8 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
                       'dir':_fs['coadd_qa']['dir'], 
                       'name':'$TILENAME_$BAND_seg.fits.fz'}
 
+# deprecated, use the desmeds repository
+
 # Multi Epoch Data Structure files
 # should have a run based system?  The input coadd run set
 # will be changing constantly
@@ -1024,10 +1026,6 @@ _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
 _meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
 #_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
 _meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts'
-
-# wq dir should be local, since the wqlog files will be opened there
-#_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts/$COADD_RUN'
-_meds_wq_dir='$TMPDIR/meds/$MEDSCONF/scripts'
 
 _fs['meds_run'] = {'dir':'$DESDATA/meds/$MEDSCONF'}
 
@@ -1051,7 +1049,7 @@ _fs['meds_log'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.log'}
 _fs['meds_pbs'] = {'dir':_meds_script_dir,
                    'name':'$TILENAME-$BAND-meds.pbs'}
-_fs['meds_wq'] = {'dir':_meds_wq_dir,
+_fs['meds_wq'] = {'dir':_meds_script_dir,
                   'name':'$TILENAME-$BAND-meds.yaml'}
 
 
@@ -1205,7 +1203,9 @@ _fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
 
 
 def expand_desvars(string_in, **keys):
-
+    """
+    expand DES specific variables, as well as environment variables
+    """
     string=string_in
     root=get_des_rootdir(**keys)
     root_remote=get_des_rootdir(fs='net')
@@ -1321,8 +1321,8 @@ def expand_desvars(string_in, **keys):
             raise ValueError("ext keyword must be sent: '%s'" % string_in)
         string = string.replace('$EXT', str(ext))
 
-
-
+    # finally do all environment variables
+    string = os.path.expandvars(string)
 
     # see if there are any leftover un-expanded variables.  If so
     # raise an exception
