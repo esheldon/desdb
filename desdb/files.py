@@ -1027,6 +1027,11 @@ _fs['astro_refine'] = {'remote_dir':'$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/coa
                        'dir':'$DESDATA/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
                        'name':'$EXPNAME_$CCD.head'}
 
+# fits versions of the .head files
+_fs['astro_refine_fits'] = {'dir':'$DESDATA/EXTRA/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
+                            'name':'$EXPNAME_$CCD_head.fits'}
+
+
 # deprecated, use the desmeds repository
 
 # Multi Epoch Data Structure files
