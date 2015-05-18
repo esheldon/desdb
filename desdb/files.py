@@ -784,6 +784,12 @@ class Coadd(dict):
                            ccd=r['ccd'])
                 r[ftype] = url
 
+            r['astro_refine'] = df.url('astro_refine',
+                                       coadd_run=self['coadd_run'],
+                                       expname=r['expname'],
+                                       ccd=r['ccd'])
+
+
             srclist.append(r)
 
         self.srclist=srclist
@@ -1016,6 +1022,10 @@ _fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
 _fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
                       'dir':_fs['coadd_qa']['dir'], 
                       'name':'$TILENAME_$BAND_seg.fits.fz'}
+
+_fs['astro_refine'] = {'remote_dir':'$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
+                       'dir':'$DESDATA/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
+                       'name':'$EXPNAME_$CCD.head'}
 
 # deprecated, use the desmeds repository
 
