@@ -92,28 +92,26 @@ def get_testbed_runs(runconfig):
 def get_release_runs(release, **keys):
     rl = get_sql_release_list(release)
 
-    query="""
-    select distinct(run) from runtag where tag in (%s)
-    """ % rl
+    withbands=keys.pop('withbands',None)
+    if withbands:
+        band_count = len(withbands)
+        bands_s = ",".join("'%s'"%b for b in withbands)
+        query = """
+        select distinct(rt.run)
+            from runtag rt
+        where rt.tag in (%s)
+        and
+        (select count(c.band) from coadd c where run=rt.run and c.band in (%s))=%d
+        """ % (rl, bands_s, band_count)
+    else:
+        query="""
+        select distinct(run) from runtag where tag in (%s)
+        """ % rl
+
 
     conn=desdb.Connection(**keys)
     res=conn.quick(query,**keys)
     runs = [r['run'] for r in res]
-
-    withbands=keys.get('withbands',None)
-    if withbands:
-        keep_runs=[]
-        for run in runs:
-            bands=get_coadd_run_bands(run, conn=conn)
-            count=0
-            for b in withbands:
-                if b in bands:
-                    count += 1
-
-            if count==len(withbands):
-                keep_runs.append(run)
-        runs=keep_runs
-
     conn.close()
     return runs
 
