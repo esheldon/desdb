@@ -92,7 +92,7 @@ def get_testbed_runs(runconfig):
 def get_release_runs(release, **keys):
     rl = get_sql_release_list(release)
 
-    withbands=keys.pop('withbands',None)
+    withbands=keys.get('withbands',None)
     if withbands:
         band_count = len(withbands)
         bands_s = ",".join("'%s'"%b for b in withbands)
