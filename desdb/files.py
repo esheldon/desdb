@@ -855,7 +855,7 @@ class Coadd(dict):
 
 
 
-class DESFiles:
+class DESFiles(dict):
     """
     Generate file urls/paths from filetype, run, etc.
 
@@ -866,88 +866,108 @@ class DESFiles:
     ----------
     fs: string, optional
         The file system.  Default is DES_DEFAULT_FS
+
+    version: string, optional
+        Optional string, default 'v1' for SVA and Y1 releases.
     """
     def __init__(self, **keys):
-        if 'fs' not in keys:
-            fs=get_default_fs()
-        else:
-            fs=keys['fs']
-        self.fs = fs
-        self._root=get_des_rootdir(fs=self.fs)
+        self._setup(**keys)
 
-    def root(self):
-        return self._root
-    
-    def dir(self, type=None, **keys):
+    def _setup(self, **keys):
+        self['version']=keys.get('version','v1')
+
+        self['fs'] = keys.get('fs',get_default_fs())
+
+        root=get_des_rootdir(fs=self['fs'])
+        if self['version']=='v2beta':
+            root=os.path.join(root, 'Prodbeta','archive')
+        self['root']=root
+
+    def get_root(self):
+        """
+        get the root directory
+        """
+        return self['root']
+    root=get_root
+
+    def get_dir(self, type=None, **keys):
         """
         Get the DES directory for the input file type
 
         parameters
         ----------
         type: string
-            The directory type, e.g. 'red_run'.  See the _fs
+            The directory type, e.g. 'red_immask', 'red_bkg' etc.  See the _fs
             dict.  If None, the root directory is returned
-        run: string
-            The run id
-        expname:
-            Exposure name
-            Can also be built up by sending keywords
-                pointing,band and visit
+
+        **keys: Keywords
+            Keywords specifying parts of the name.  See
+            the docs for expand_desvars
         """
+
         if type is None:
             return self.root()
 
-        if type not in _fs:
+        fdict=self._get_fdict()
+
+        if type not in fdict:
             raise ValueError("Unsupported path type '%s'" % type)
         
-        if self.fs == 'net':
-            url = _fs[type]['remote_dir']
+        if self['fs'] == 'net':
+            url = fdict[type]['remote_dir']
         else:
-            url = _fs[type]['dir']
+            url = fdict[type]['dir']
 
         url = self._expand_desvars(url, **keys)
         return url
 
-    def url(self, type=None, **keys):
+    dir=get_dir
+
+    def get_url(self, type=None, **keys):
         """
         Get the URL (local or remote) for the file type.
 
         possible parameters (there could be others required)
         -------------------
         type: string
-            The file type, e.g. 'red_image'.  See the _fs dict.
+            The file type, e.g. 'red_immask', 'red_bkg'.
             dict.  If None, the root directory is returned
         run: string
             The run id
 
-        The rest of the URL is built up from some combination
-        of the following that depends on the file type
-
-        expname:
-            Exposure name
-            Can also be built up by sending keywords
-                pointing, band and visit
-        ccd: string/number
-            The ccd number
-        band: string
-            The band, e.g. 'i'
-        tilename: string
-            Tilename for coadds
+        **keys: Keywords
+            Keywords specifying parts of the name.  See
+            the docs for expand_desvars
         """
         if type is None:
-            return self.root()
+            return self.get_root()
+
+        fdict=self._get_fdict()
 
         url = self.dir(type, **keys)
-        if 'name' in _fs[type]:
-            url = os.path.join(url, _fs[type]['name'])
+
+        if 'name' in fdict[type]:
+            url = os.path.join(url, fdict[type]['name'])
+
         url = self._expand_desvars(url, **keys)
         return url
-    name=url
+
+    name=get_url
+    url=get_url
 
     def _expand_desvars(self, url, **keys):
-        keys['fs'] = self.fs
+        keys['fs'] = self['fs']
+        keys['version'] = self['version']
         return expand_desvars(url, **keys)
 
+    def _get_fdict(self):
+        if self['version']=='1':
+            fdict=fnames_v1
+        elif self['version']=='v2beta':
+            fdict=fnames_v2beta
+        else:
+            raise ValueError("bad version: '%s'" % self['version'])
+        return fdict
 
 def get_dir_generic(subdirs):
     if not isinstance(subdirs, list):
@@ -975,250 +995,162 @@ def get_path_generic(subdirs, fileparts, join_char='_', ext='fits'):
 # notes 
 #   - .fz might not always hold
 #   - EXPNAME can also be built from POINTING-BAND-VISIT
-_fs={}
-_fs['red_run']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red',
+fnames_v1={}
+fnames_v1['red_run']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red',
                     'dir':         '$DESDATA/$DESPROJ/red/$RUN/red'}
 
-_fs['red_exp']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red/$EXPNAME',
+fnames_v1['red_exp']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/red/$EXPNAME',
                     'dir':       '$DESDATA/$DESPROJ/red/$RUN/red/$EXPNAME'}
-_fs['red_qa']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/QA/$EXPNAME',
+fnames_v1['red_qa']   = {'remote_dir':'$DESREMOTE/$DESPROJ/red/$RUN/QA/$EXPNAME',
                    'dir':       '$DESDATA/$DESPROJ/red/$RUN/QA/$EXPNAME'}
 
 
 
-_fs['red_image'] = {'remote_dir':_fs['red_exp']['remote_dir'],
-                    'dir':       _fs['red_exp']['dir'], 
+fnames_v1['red_image'] = {'remote_dir':fnames_v1['red_exp']['remote_dir'],
+                    'dir':       fnames_v1['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD.fits.fz'}
 
-_fs['red_cat']   = {'remote_dir':_fs['red_exp']['remote_dir'],
-                    'dir':       _fs['red_exp']['dir'], 
+fnames_v1['red_cat']   = {'remote_dir':fnames_v1['red_exp']['remote_dir'],
+                    'dir':       fnames_v1['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_cat.fits'}
-_fs['red_bkg']   = {'remote_dir':_fs['red_exp']['remote_dir'],
-                    'dir':       _fs['red_exp']['dir'], 
+fnames_v1['red_bkg']   = {'remote_dir':fnames_v1['red_exp']['remote_dir'],
+                    'dir':       fnames_v1['red_exp']['dir'], 
                     'name':'$EXPNAME_$CCD_bkg.fits.fz'}
-_fs['red_seg']   = {'remote_dir':_fs['red_qa']['remote_dir'],
-                    'dir':       _fs['red_qa']['dir'], 
+fnames_v1['red_seg']   = {'remote_dir':fnames_v1['red_qa']['remote_dir'],
+                    'dir':       fnames_v1['red_qa']['dir'], 
                     'name':'$EXPNAME_$CCD_seg.fits.fz'}
 
 
-_fs['se_generic'] = {'dir': '$DESDATA/$DESPROJ/$FILECLASS/$RUN/$FILETYPE',
+fnames_v1['se_generic'] = {'dir': '$DESDATA/$DESPROJ/$FILECLASS/$RUN/$FILETYPE',
                      'name':'$EXPNAME_$CCD_header.fits'
                                   }
 
 
-_fs['coadd_run'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/coadd',
+fnames_v1['coadd_run'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/coadd',
                     'dir':        '$DESDATA/$DESPROJ/coadd/$COADD_RUN/coadd'}
-_fs['coadd_qa'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/segmap',
+fnames_v1['coadd_qa'] = {'remote_dir': '$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/segmap',
                    'dir':        '$DESDATA/$DESPROJ/coadd/$COADD_RUN/QA/segmap'}
 
-_fs['coadd_image'] = {'remote_dir': _fs['coadd_run']['remote_dir'],
-                      'dir':        _fs['coadd_run']['dir'], 
+fnames_v1['coadd_image'] = {'remote_dir': fnames_v1['coadd_run']['remote_dir'],
+                      'dir':        fnames_v1['coadd_run']['dir'], 
                       'name':       '$TILENAME_$BAND.fits.fz'}
-_fs['coadd_cat']   = {'remote_dir': _fs['coadd_run']['remote_dir'],
-                      'dir':_fs['coadd_run']['dir'], 
+fnames_v1['coadd_cat']   = {'remote_dir': fnames_v1['coadd_run']['remote_dir'],
+                      'dir':fnames_v1['coadd_run']['dir'], 
                       'name':'$TILENAME_$BAND_cat.fits'}
-_fs['coadd_seg']   = {'remote_dir': _fs['coadd_qa']['remote_dir'],
-                      'dir':_fs['coadd_qa']['dir'], 
+fnames_v1['coadd_seg']   = {'remote_dir': fnames_v1['coadd_qa']['remote_dir'],
+                      'dir':fnames_v1['coadd_qa']['dir'], 
                       'name':'$TILENAME_$BAND_seg.fits.fz'}
 
-_fs['astro_refine'] = {'remote_dir':'$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
+fnames_v1['astro_refine'] = {'remote_dir':'$DESREMOTE/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
                        'dir':'$DESDATA/$DESPROJ/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
                        'name':'$EXPNAME_$CCD.head'}
 
 # fits versions of the .head files
-_fs['astro_refine_fits'] = {'dir':'$DESDATA/EXTRA/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
+fnames_v1['astro_refine_fits'] = {'dir':'$DESDATA/EXTRA/coadd/$COADD_RUN/QA/coadd_astrorefine_head',
                             'name':'$EXPNAME_$CCD_head.fits'}
 
 
-# deprecated, use the desmeds repository
-
-# Multi Epoch Data Structure files
-# should have a run based system?  The input coadd run set
-# will be changing constantly
-
-_meds_dir='$DESDATA/meds/$MEDSCONF/$COADD_RUN'
-#_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts/$COADD_RUN'
-_meds_script_dir='$DESDATA/meds/$MEDSCONF/scripts'
-
-_fs['meds_run'] = {'dir':'$DESDATA/meds/$MEDSCONF'}
-
-_fs['meds'] = {'dir': _meds_dir,
-               'name': '$TILENAME-$BAND-meds-$MEDSCONF.fits.fz'}
-_fs['meds_input'] = {'dir': _meds_dir,
-                     'name':'$TILENAME-$BAND-meds-input-$MEDSCONF.dat'}
-_fs['meds_coadd_objects_id'] = {'dir': _meds_dir,
-                                'name':'$TILENAME-$BAND-meds-coadd-objects-id-$MEDSCONF.dat'}
-_fs['meds_srclist'] = {'dir': _meds_dir,
-                       'name':'$TILENAME-$BAND-meds-srclist-$MEDSCONF.dat'}
-_fs['meds_status'] = {'dir':_meds_dir,
-                      'name':'$TILENAME-$BAND-meds-status-$MEDSCONF.yaml'}
-_fs['meds_stats'] = {'dir':_meds_dir,
-                     'name':'$TILENAME-$BAND-meds-stats-$MEDSCONF.yaml'}
-
-
-_fs['meds_script'] = {'dir':_meds_script_dir,
-                      'name':'$TILENAME-$BAND-meds.sh'}
-_fs['meds_log'] = {'dir':_meds_script_dir,
-                   'name':'$TILENAME-$BAND-meds.log'}
-_fs['meds_pbs'] = {'dir':_meds_script_dir,
-                   'name':'$TILENAME-$BAND-meds.pbs'}
-_fs['meds_wq'] = {'dir':_meds_script_dir,
-                  'name':'$TILENAME-$BAND-meds.yaml'}
-
-
-
-#
-# outputs from any weak lensing pipeline
-#
-
-# se exp names have underscores so we use underscores
-_fs['wlpipe'] = {'dir': '$DESDATA/wlpipe'}
-_fs['wlpipe_run'] = {'dir': _fs['wlpipe']['dir']+'/$RUN'}
-
-_fs['wlpipe_collated'] = {'dir':_fs['wlpipe_run']['dir']+'/collated'}
-_fs['wlpipe_collated_goodlist'] = {'dir':_fs['wlpipe_collated']['dir'],
-                                   'name':'$RUN-goodlist.json'}
-_fs['wlpipe_collated_badlist'] = {'dir':_fs['wlpipe_collated']['dir'],
-                                  'name':'$RUN-badlist.json'}
-
-
-
-_fs['wlpipe_pbs']    = {'dir': _fs['wlpipe_run']['dir']+'/pbs'}
-_fs['wlpipe_condor'] = {'dir': _fs['wlpipe_run']['dir']+'/condor'}
-
-_fs['wlpipe_scratch'] = {'dir': '$TMPDIR/DES/wlpipe'}
-_fs['wlpipe_scratch_run'] = {'dir': _fs['wlpipe_scratch']['dir']+'/$RUN'}
-#_fs['wlpipe_pbs'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/pbs'}
-
-_fs['wlpipe_flists'] = {'dir': _fs['wlpipe_run']['dir']+'/flists'}
-_fs['wlpipe_flist_red'] = {'dir': _fs['wlpipe_flists']['dir'],
-                           'name':'$RUN_red_info.json'}
-
-
-# SE files by exposure name
-_fs['wlpipe_exp'] = {'dir': _fs['wlpipe_run']['dir']+'/$EXPNAME'}
-
-# generic, for user use
-_fs['wlpipe_se_generic'] = {'dir': _fs['wlpipe_exp']['dir'],
-                            'name': '$RUN_$EXPNAME_$CCD_$FILETYPE.$EXT'}
-
-
-# required
-# meta has inputs, outputs, other metadata
-_fs['wlpipe_se_meta'] = {'dir': _fs['wlpipe_exp']['dir'],
-                         'name': '$RUN_$EXPNAME_$CCD_meta.json'}
-_fs['wlpipe_se_status'] = {'dir': _fs['wlpipe_exp']['dir'],
-                           'name': '$RUN_$EXPNAME_$CCD_status.txt'}
-
-# scripts are also pbs scripts
-_fs['wlpipe_se_script'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME_$CCD_script.pbs'}
-_fs['wlpipe_se_check'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME_$CCD_check.pbs'}
-_fs['wlpipe_se_log'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/byexp/$EXPNAME',
-     'name': '$EXPNAME_$CCD_script.log'}
-
-
-# ME files by tilename and band
-# tile names have dashes so we use dashes
-_fs['wlpipe_tile'] = {'dir': _fs['wlpipe_run']['dir']+'/$TILENAME'}
-_fs['wlpipe_scratch_tile'] = {'dir': _fs['wlpipe_scratch_run']['dir']+'/$TILENAME'}
-
-# non-split versions
-_fs['wlpipe_me_generic'] = {'dir': _fs['wlpipe_tile']['dir'],
-                            'name': '$RUN-$TILENAME-$FILETYPE.$EXT'}
-
-#_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_tile']['dir'],
-#                         'name': '$RUN-$TILENAME-meta.json'}
-_fs['wlpipe_me_meta'] = {'dir': _fs['wlpipe_scratch_tile']['dir'],
-                         'name': '$RUN-$TILENAME-meta.json'}
-_fs['wlpipe_me_status'] = {'dir': _fs['wlpipe_tile']['dir'],
-                           'name': '$RUN-$TILENAME-status.txt'}
-
-# ME split versions
-_fs['wlpipe_me_split'] = \
-    {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$START-$END-$FILETYPE.$EXT'}
-
-_fs['wlpipe_me_collated'] = {'dir':_fs['wlpipe_collated']['dir'],
-                             'name':'$RUN-$TILENAME-$FILETYPE-collated.$EXT'}
-_fs['wlpipe_me_collated_blinded'] = {'dir':_fs['wlpipe_collated']['dir'],
-                                     'name':'$RUN-$TILENAME-$FILETYPE-collated-blind.$EXT'}
-_fs['wlpipe_me_download'] = {'dir':_fs['wlpipe_collated']['dir'],
-                             'name':'download.html'}
-
-
-_fs['wlpipe_me_meta_split'] = \
-    {'dir': _fs['wlpipe_scratch_tile']['dir'],
-     'name': '$RUN-$TILENAME-$START-$END-meta.json'}
-_fs['wlpipe_me_status_split'] = \
-    {'dir': _fs['wlpipe_tile']['dir'],
-     'name': '$RUN-$TILENAME-$START-$END-status.txt'}
-
-# these names are independent of me or se
-_fs['wlpipe_master_script'] =  {'dir': _fs['wlpipe_condor']['dir'], 'name': 'master.sh'}
-_fs['wlpipe_commands'] = {'dir': _fs['wlpipe_condor']['dir'], 'name': 'commands.txt'}
-
-
-
-_fs['wlpipe_me_tile_commands'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                                  'name': '$TILENAME-commands.txt'}
-_fs['wlpipe_me_tile_minions'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                                 'name': '$TILENAME-minions.pbs'}
-
-
-# condor
-# different clusters per tile.
-_fs['wlpipe_me_tile_condor'] = \
-    {'dir': _fs['wlpipe_condor']['dir']+'/submit',
-     'name': '$TILENAME.condor'}
-_fs['wlpipe_me_tile_condor_missing'] = \
-    {'dir': _fs['wlpipe_condor']['dir']+'/submit',
-     'name': '$TILENAME-missing.condor'}
-
-
-_fs['wlpipe_me_tile_checker'] = {'dir': _fs['wlpipe_condor']['dir']+'/check',
-                                 'name': '$TILENAME-check.sh'}
-
-# all in one cluster
-_fs['wlpipe_me_condor'] = {'dir': _fs['wlpipe_condor']['dir'],
-                           'name': '$RUN.condor'}
-_fs['wlpipe_me_condor_missing'] = {'dir': _fs['wlpipe_condor']['dir'],
-                                   'name': '$RUN-missing.condor'}
-
-
-_fs['wlpipe_me_checker'] = {'dir': _fs['wlpipe_condor']['dir'],
-                            'name': '$RUN-check.sh'}
-
-_fs['wlpipe_me_log_split'] = \
-    {'dir': _fs['wlpipe_condor']['dir']+'/logs/$TILENAME',
-     'name': '$TILENAME-$START-$END.log'}
-
-
-
-_fs['wlpipe_me_script_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
-     'name': '$TILENAME-$START-$END-script.pbs'}
-_fs['wlpipe_me_check_split'] = \
-    {'dir': _fs['wlpipe_pbs']['dir']+'/bytile/$TILENAME',
-     'name': '$TILENAME-$START-$END-check.pbs'}
-
-
-
-_fs['wlpipe_minions'] = {'dir': _fs['wlpipe_pbs']['dir'], 'name': 'minions.pbs'}
-_fs['wlpipe_minions_check'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                               'name': 'check-minions.pbs'}
-_fs['wlpipe_check_reduce'] = {'dir': _fs['wlpipe_pbs']['dir'],
-                              'name': 'reduce-check.py'}
+# for refactored pipeline, beta
+# note hard-coded path elements such as Y2T and Y2A1, don't know yet where
+# to get these
+fnames_v2beta={}
+fnames_v2beta['red_immask'] = \
+    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
+     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
+     'name':'D$EXPNUM_$BAND_c$CCDNUM_r$REQNUMp$ATTNUM_immasked.fits'}
+fnames_v2beta['red_bkg'] = \
+    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
+     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
+     'name':'D$EXPNUM_$BAND_c$CCDNUM_r$REQNUMp$ATTNUM_bkg.fits'}
 
 
 def expand_desvars(string_in, **keys):
     """
     expand DES specific variables, as well as environment variables
     """
+
+    version=keys.get('version','v1')
+
+    if version=='v1':
+        return expand_desvars_v1(string_in, **keys)
+    else:
+        return expand_desvars_v2(string_in, **keys)
+
+def expand_desvars_v2(string_in, **keys):
+    string=string_in
+    root=get_des_rootdir(**keys)
+    root_remote=get_des_rootdir(fs='net')
+
+
+    if '$DESDATA' in string:
+        string = string.replace('$DESDATA', root)
+
+    if '$TMPDIR' in string:
+        tmpdir=os.environ['TMPDIR']
+        string = string.replace('$TMPDIR', tmpdir)
+
+    if '$DESREMOTE' in string:
+        string = string.replace('$DESREMOTE', root_remote)
+
+    if '$PROJECT' in string:
+        project=keys.get('project', None)
+        if project is None:
+            project=get_default_des_project()
+
+        string = string.replace('$PROJECT', str(project))
+
+    if '$REQNUM' in string:
+        reqnum = keys.get('reqnum',None)
+        if reqnum is None:
+            raise ValueError("reqnum must be sent: '%s'" % string_in)
+
+        string = string.replace('$REQNUM', str(reqnum))
+
+    if '$EXPNUM' in string:
+        expnum = keys.get('expnum',None)
+        if expnum is None:
+            raise ValueError("expnum must be sent: '%s'" % string_in)
+
+        string = string.replace('$EXPNUM', '%08d' % expnum)
+
+    if '$ATTNUM' in string:
+        attnum = keys.get('attnum',None)
+        if attnum is None:
+            raise ValueError("attnum must be sent: '%s'" % string_in)
+
+        string = string.replace('$ATTNUM', '%02d' % attnum)
+
+    if '$CCDNUM' in string:
+        ccdnum = keys.get('ccdnum',None)
+        if ccdnum is None:
+            ccdnum = keys.get('ccd',None)
+            if ccdnum is None:
+                raise ValueError("ccd= or ccdnum= must be sent: '%s'" % string_in)
+
+        string = string.replace('$CCDNUM', '%02d' % ccdnum)
+
+
+    if '$BAND' in string:
+        band = keys.get('band',None)
+        if band is None:
+            raise ValueError("band must be sent: '%s'" % string_in)
+
+        string = string.replace('$BAND', band)
+
+
+    # finally do all environment variables
+    string = os.path.expandvars(string)
+
+    # see if there are any leftover un-expanded variables.  If so
+    # raise an exception
+    if '$' in string:
+        raise ValueError("There were unexpanded variables: '%s'" % string)
+
+    return string
+   
+
+
+def expand_desvars_v1(string_in, **keys):
     string=string_in
     root=get_des_rootdir(**keys)
     root_remote=get_des_rootdir(fs='net')
