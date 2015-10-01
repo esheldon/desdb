@@ -961,7 +961,7 @@ class DESFiles(dict):
         return expand_desvars(url, **keys)
 
     def _get_fdict(self):
-        if self['version']=='1':
+        if self['version']=='v1':
             fdict=fnames_v1
         elif self['version']=='v2beta':
             fdict=fnames_v2beta
