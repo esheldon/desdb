@@ -355,7 +355,7 @@ def get_red_info_by_run(run, expname=None, skip_ccds=SKIP_CCDS, conn=None, **key
     if conn is None:
         conn=desdb.Connection(**keys)
 
-    skip_ccds=','.join(skip_ccds)
+    skip_ccds=','.join([str(nm) for nm in skip_ccds])
     desdata=get_des_rootdir()
     if expname is not None:
         query=_runexp_template % {'run':run,
