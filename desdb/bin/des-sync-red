@@ -117,5 +117,5 @@ wget                        \
     --no-parent             \
     --tries 10              \
     --timeout 900           \
-    --reject "index.html*,*streak.fits*,*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
+    --reject "index.html*,*streaks.fits*,*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
     "$remote_url/"
