@@ -73,7 +73,7 @@ run="$1"
 local_url="${DESDATA}/${project}/coadd/${run}/${subdir}"
 remote_url="${DESREMOTE}/${project}/coadd/${run}/${subdir}"
 
-reject="*_det*,*psfcat.fits*,*.log"
+reject="*_det*,*psfcat.fits*,*.log,*index.html*"
 
 echo "
     run:     $run
