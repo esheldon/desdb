@@ -761,7 +761,9 @@ class Coadd(dict):
             and coadd.run='{coadd_run}'
             and c.id=coadd_src.src_imageid
             and c.parentid=d.id
-            and loc.id = d.id\n"""
+            and loc.id = d.id
+        ORDER BY
+            d.id\n"""
 
 
         query=query.format(band=self['band'],
