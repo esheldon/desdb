@@ -1,0 +1,97 @@
+#!/bin/bash
+function usage_and_exit {
+    echo "
+Usage 
+        des-rsync-se-y2 mystery_path reqnum expnum attnum subdir
+
+Description
+
+        Download images and catalogs for the input run and exposure. Don't
+        ask what myster path is, just get it from a database query
+
+"
+    exit 1
+}
+
+if [[ ${DESDATA:+1} == "" ]]; then
+    echo "set DESDATA environment variable"
+    exit 1
+fi
+if [[ ${DESREMOTE_RSYNC:+1} == "" ]]; then
+    echo "set DESREMOTE_RSYNC environment variable"
+    exit 1
+fi
+if [[ ${DES_RSYNC_PASSFILE:+1} == "" ]]; then
+    echo "set DES_RSYNC_PASSFILE environment variable"
+    exit 1
+fi
+
+
+
+project="ACT"
+yname="Y2T4"
+while getopts "p:y:" Option
+  do
+  case $Option in
+      p) project=$OPTARG ;;
+      y) yname=$OPTARG ;;
+      [?]) usage_and_exit ;;  
+  esac
+done
+shift $(($OPTIND - 1))
+
+if [[ $# -lt 5 ]]; then
+    usage_and_exit
+fi
+
+mystery_path="$1"
+reqnum="$2"
+expname="$3"
+attnum="$4"
+subdir_in="$5"
+
+attstr=$(printf "%02d" $attnum)
+
+remote="desar2.cosmology.illinois.edu::ProdBeta"
+
+if [[ $subdir_in == "red" ]]; then
+    subdir="${subdir_in}/immask"
+else
+    subdir="${subdir_in}"
+fi
+
+remote_url="${remote}/${project}/finalcut/${yname}/${mystery_path}-r${reqnum}/${expname}/p${attstr}/${subdir}/"
+local_url="${DESDATA}/Prodbeta/archive/${project}/finalcut/${yname}/${mystery_path}-r${reqnum}/${expname}/p${attstr}/${subdir}/"
+
+echo "
+    mystery_path: ${mystery_path}
+    reqnum:       ${reqnum}
+    expname:      ${expname}
+    attnum:       ${attnum}
+    subdir:       ${subdir_in}
+    remote:       ${remote_url}
+    local:        ${local_url}
+"
+
+if [[ ! -e $local_url ]]; then
+    echo "making dir: $local_url"
+    mkdir -p "$local_url"
+    if [[ $? != "0" ]]; then
+        echo "failed to make dir, exiting"
+        exit 1
+    fi
+fi
+
+echo "chdir to dir $local_url"
+cd "$local_url"
+if [[ "$?" != "0" ]]; then
+    echo "Failed to chdir to: $local_url"
+    exit 1
+fi
+
+rsync \
+    -av \
+    --password-file $DES_RSYNC_PASSFILE \
+    --exclude "*nullweight*" \
+    "$remote_url/" .
+

@@ -1,0 +1,126 @@
+#!/bin/bash
+# Download DES red files. 
+#
+# Use -h to see usage and documentation.
+#
+# Author
+#   Erin Sheldon, Brookhaven National Laboratory
+# Changes
+#   2013-11-06:
+#       use rsync daemon
+#   2013-06-19:
+#       option to give project       
+#   2013-01-13:
+#     moved to using new https address.  This now requires user
+#     login and password.  These should be stored in ~/.netrc
+#
+#        machine {host} login {login} password {password}
+#   
+#
+
+function usage_and_exit {
+    echo "
+Usage 
+        des-rsync-red [-p PROJECT] run expname
+
+Description
+
+        Download images and catalogs for the input run and exposure
+
+            \$DESDATA/\${project}/red/\${run}/red/\${expname}
+            \$DESDATA/\${project}/red/\${run}/QA/\${expname}
+        
+        where \$DESDATA is an environment variable pointing to the base of your
+        DES data area.  You should set \$DESREMOTE_RSYNC as the url of the server,
+        and DES_RSYNC_PASSFILE as the path to your password file
+
+        The default project is OPS.
+"
+    exit 1
+}
+
+if [[ ${DESDATA:+1} == "" ]]; then
+    echo "set DESDATA environment variable"
+    exit 1
+fi
+if [[ ${DESREMOTE_RSYNC:+1} == "" ]]; then
+    echo "set DESREMOTE_RSYNC environment variable"
+    exit 1
+fi
+if [[ ${DES_RSYNC_PASSFILE:+1} == "" ]]; then
+    echo "set DES_RSYNC_PASSFILE environment variable"
+    exit 1
+fi
+
+
+
+project="OPS"
+subdir="red"
+while getopts "rqp:" Option
+  do
+  case $Option in
+      p) project=$OPTARG ;;
+      [?]) usage_and_exit ;;  
+  esac
+done
+shift $(($OPTIND - 1))
+
+if [[ $# -lt 2 ]]; then
+    usage_and_exit
+fi
+
+run="$1"
+expname="$2"
+
+for subdir in red QA; do
+
+    local_url="${DESDATA}/${project}/red/${run}/${subdir}/${expname}"
+    remote_url="${DESREMOTE_RSYNC}/${project}/red/${run}/${subdir}/${expname}"
+
+    echo "
+        run:     $run
+        expname: $expname
+        remote:  $remote_url
+        local:   $local_url
+    "
+
+    if [[ ! -e $local_url ]]; then
+        echo "making dir: $local_url"
+        mkdir -p "$local_url"
+        if [[ $? != "0" ]]; then
+            echo "failed to make dir, exiting"
+            exit 1
+        fi
+    fi
+
+    echo "chdir to dir $local_url"
+    cd "$local_url"
+    if [[ "$?" != "0" ]]; then
+        echo "Failed to chdir to: $local_url"
+        exit 1
+    fi
+
+    #echo "
+    #rsync \\
+    #    -av \\
+    #    --password-file $DES_RSYNC_PASSFILE \\
+    #    --exclude \"*psfcat.fits*\" \\
+    #    --exclude \"*bleed.fits*\" \\
+    #    --exclude \"*stars.fits*\" \\
+    #    --exclude \"*scamp*\" \\
+    #    --exclude \"*.ps\" \\
+    #    \"$remote_url/\" .
+    #"
+    rsync \
+        -av \
+        --password-file $DES_RSYNC_PASSFILE \
+        --exclude "*psfcat.fits*" \
+        --exclude "*bleed.fits*" \
+        --exclude "*stars.fits*" \
+        --exclude "*scamp*" \
+        --exclude "*.ps" \
+        "$remote_url/" .
+
+done
+
+#        --reject "index.html*,*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
