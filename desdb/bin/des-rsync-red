@@ -6,6 +6,8 @@
 # Author
 #   Erin Sheldon, Brookhaven National Laboratory
 # Changes
+#   2015-11-04
+#       user must specify the subdir.  move to desdb
 #   2013-11-06:
 #       use rsync daemon
 #   2013-06-19:
@@ -21,14 +23,14 @@
 function usage_and_exit {
     echo "
 Usage 
-        des-rsync-red [-p PROJECT] run expname
+        des-rsync-red [-p PROJECT] run expname subdir
 
 Description
 
-        Download images and catalogs for the input run and exposure
+        Download images and catalogs for the input run and exposure.
+        subdir can be 'red' or 'QA'
 
-            \$DESDATA/\${project}/red/\${run}/red/\${expname}
-            \$DESDATA/\${project}/red/\${run}/QA/\${expname}
+            \$DESDATA/\${project}/red/\${run}/${subdir}/\${expname}
         
         where \$DESDATA is an environment variable pointing to the base of your
         DES data area.  You should set \$DESREMOTE_RSYNC as the url of the server,
@@ -55,8 +57,7 @@ fi
 
 
 project="OPS"
-subdir="red"
-while getopts "rqp:" Option
+while getopts "p:" Option
   do
   case $Option in
       p) project=$OPTARG ;;
@@ -65,62 +66,52 @@ while getopts "rqp:" Option
 done
 shift $(($OPTIND - 1))
 
-if [[ $# -lt 2 ]]; then
+if [[ $# -lt 3 ]]; then
     usage_and_exit
 fi
 
 run="$1"
 expname="$2"
+subdir="$3"
 
-for subdir in red QA; do
+if [[ $subdir != "red" && $subdir != "QA" ]]; then
+    echo "got subdir $subdir, expected red or QA"
+    exit 1
+fi
 
-    local_url="${DESDATA}/${project}/red/${run}/${subdir}/${expname}"
-    remote_url="${DESREMOTE_RSYNC}/${project}/red/${run}/${subdir}/${expname}"
+local_url="${DESDATA}/${project}/red/${run}/${subdir}/${expname}"
+remote_url="${DESREMOTE_RSYNC}/${project}/red/${run}/${subdir}/${expname}"
 
-    echo "
-        run:     $run
-        expname: $expname
-        remote:  $remote_url
-        local:   $local_url
-    "
+echo "
+    run:     $run
+    expname: $expname
+    remote:  $remote_url
+    local:   $local_url
+    subdir:  $subdir
+"
 
-    if [[ ! -e $local_url ]]; then
-        echo "making dir: $local_url"
-        mkdir -p "$local_url"
-        if [[ $? != "0" ]]; then
-            echo "failed to make dir, exiting"
-            exit 1
-        fi
-    fi
-
-    echo "chdir to dir $local_url"
-    cd "$local_url"
-    if [[ "$?" != "0" ]]; then
-        echo "Failed to chdir to: $local_url"
+if [[ ! -e $local_url ]]; then
+    echo "making dir: $local_url"
+    mkdir -p "$local_url"
+    if [[ $? != "0" ]]; then
+        echo "failed to make dir, exiting"
         exit 1
     fi
+fi
 
-    #echo "
-    #rsync \\
-    #    -av \\
-    #    --password-file $DES_RSYNC_PASSFILE \\
-    #    --exclude \"*psfcat.fits*\" \\
-    #    --exclude \"*bleed.fits*\" \\
-    #    --exclude \"*stars.fits*\" \\
-    #    --exclude \"*scamp*\" \\
-    #    --exclude \"*.ps\" \\
-    #    \"$remote_url/\" .
-    #"
-    rsync \
-        -av \
-        --password-file $DES_RSYNC_PASSFILE \
-        --exclude "*psfcat.fits*" \
-        --exclude "*bleed.fits*" \
-        --exclude "*stars.fits*" \
-        --exclude "*scamp*" \
-        --exclude "*.ps" \
-        "$remote_url/" .
+echo "chdir to dir $local_url"
+cd "$local_url"
+if [[ "$?" != "0" ]]; then
+    echo "Failed to chdir to: $local_url"
+    exit 1
+fi
 
-done
-
-#        --reject "index.html*,*psfcat.fits*,*bleed.fits*,*stars.fits*,*scamp*,*.ps" \
+rsync \
+    -av \
+    --password-file $DES_RSYNC_PASSFILE \
+    --exclude "*psfcat.fits*" \
+    --exclude "*bleed.fits*" \
+    --exclude "*stars.fits*" \
+    --exclude "*scamp*" \
+    --exclude "*.ps" \
+    "$remote_url/" .
