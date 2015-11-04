@@ -664,6 +664,11 @@ class Coadd(dict):
                                    coadd_run=self['coadd_run'], 
                                    tilename=self['tilename'], 
                                    band=self['band'])
+        self['seg_url'] = df.url('coadd_seg', 
+                                 coadd_run=self['coadd_run'], 
+                                 tilename=self['tilename'], 
+                                 band=self['band'])
+
         self['cat_url'] = df.url('coadd_cat', 
                                  coadd_run=self['coadd_run'], 
                                  tilename=self['tilename'], 
@@ -1055,14 +1060,15 @@ fnames_v1['astro_refine_fits'] = {'dir':'$DESDATA/EXTRA/coadd/$COADD_RUN/QA/coad
 # for refactored pipeline, beta
 # note hard-coded path elements such as Y2T and Y2A1, don't know yet where
 # to get these
+# these remote are for http, different from rsync which has no archive element
 fnames_v2beta={}
 fnames_v2beta['red_immask'] = \
-    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
-     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
+    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T4/$MYSTERY_PATH-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
+     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T4/$MYSTERY_PATH-r$REQNUM/D$EXPNUM/p$ATTNUM/red/immask',
      'name':'D$EXPNUM_$BAND_c$CCDNUM_r$REQNUMp$ATTNUM_immasked.fits'}
 fnames_v2beta['red_bkg'] = \
-    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
-     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T/Y2A1-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
+    {'remote_dir':'$DESREMOTE/Prodbeta/archive/$PROJECT/finalcut/Y2T4/$MYSTERY_PATH-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
+     'dir':'$DESDATA/Prodbeta/archive/$PROJECT/finalcut/Y2T4/$MYSTERY_PATH-r$REQNUM/D$EXPNUM/p$ATTNUM/bkg',
      'name':'D$EXPNUM_$BAND_c$CCDNUM_r$REQNUMp$ATTNUM_bkg.fits'}
 
 
