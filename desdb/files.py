@@ -1107,6 +1107,14 @@ def expand_desvars_v2(string_in, **keys):
 
         string = string.replace('$PROJECT', str(project))
 
+    if '$MYSTERY_PATH' in string:
+        mystery_path = keys.get('mystery_path',None)
+        if mystery_path is None:
+            raise ValueError("mystery_path must be sent: '%s'" % string_in)
+
+        string = string.replace('$MYSTERY_PATH', str(mystery_path))
+
+
     if '$REQNUM' in string:
         reqnum = keys.get('reqnum',None)
         if reqnum is None:
@@ -1155,7 +1163,7 @@ def expand_desvars_v2(string_in, **keys):
         raise ValueError("There were unexpanded variables: '%s'" % string)
 
     return string
-   
+
 
 
 def expand_desvars_v1(string_in, **keys):
