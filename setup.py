@@ -5,6 +5,8 @@ from distutils.core import setup
 scripts= ['des-query',
           'des-sync-red',
           'des-sync-coadd',
+          'des-rsync-red',
+          'des-rsync-coadd',
           'des-fits2table',
           'des-red-expnames',
           'get-coadd-info-by-release',
