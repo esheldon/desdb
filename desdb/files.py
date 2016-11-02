@@ -14,6 +14,120 @@ _release_ref_images={'Y1C2_COADD_PRERELEASE':{'g': 443103519,
                                               'i': 442546880,
                                               'z': 442540179,
                                               'Y': 442536081}}
+
+def get_meds_info(release, **kw):
+    """
+    get information about the MEDS files in a given release
+    
+    parameters
+    ----------
+    release: string
+        The release, or tag name, e.g. 'y3a1_coadd'
+    kw: keywords
+        Other keywods for the database connection
+
+    comments
+    --------
+    This is for the Y3 schema
+    """
+
+    query="""
+    select
+        fai.path,
+        m.filename,
+        fai.compression,
+        m.tilename,
+        m.band
+    from
+        proctag t,
+        miscfile m,
+        file_archive_info fai 
+    where
+        t.tag='{release}' 
+        and t.pfw_attempt_id=m.pfw_attempt_id
+        and m.filetype='coadd_meds' 
+        and m.filename=fai.filename
+    """.format(release=release.upper())
+
+    conn=desdb.Connection(**kw)
+    res=conn.quick(query)
+
+    return res
+
+def get_coadd_psf_paths(release, tilename, band=None, **kw):
+    """
+    get all the psf paths for the given tile
+
+    This query is amazingly slow, it takes of order a minute
+    
+    parameters
+    ----------
+    release: string
+        The release, or tag name, e.g. 'y3a1_coadd'
+    tilename: string
+        e.g. DES2348+0001
+    band: string, optional
+        Optionally limit to the specified band
+    kw: keywords
+        Other keywods for the database connection
+
+    comments
+    --------
+    This is for the Y3 schema
+    """
+
+    if band is not None:
+        bstr="        and i.band='{band}'".format(band=band)
+    else:
+        bstr=""
+
+    query="""
+    select
+        pfai.path,
+        pfai.filename
+
+    from
+        proctag t,
+        pfw_attempt a,
+        pfw_attempt_val av,
+        task t,
+        desfile d,
+        opm_used u,
+        image i,
+        miscfile m,
+        file_archive_info pfai 
+
+    where
+        t.tag='{release}' 
+        and t.pfw_attempt_id=av.pfw_attempt_id 
+        and av.key='tilename' 
+        and av.val='{tilename}' 
+        and t.pfw_attempt_id=a.id 
+        and t.root_task_id=a.task_id 
+        and t.id=u.task_id  
+        and u.desfile_id=d.id  
+        and d.filetype='red_immask' 
+        and d.filename=i.filename 
+        and d.pfw_attempt_id=m.pfw_attempt_id 
+        and m.filetype='psfex_model' 
+        and m.filename=pfai.filename 
+        and i.ccdnum=m.ccdnum 
+        {bstr}
+    """ .format(release=release.upper(),
+                tilename=tilename,
+               bstr=bstr)
+
+    conn=desdb.Connection(**kw)
+    res=conn.quick(query)
+
+    paths=[]
+    for p in res:
+        path = os.path.join(p['path'], p['filename'])
+        paths.append(path)
+
+    return paths
+
+
 def get_release_ref_image(release, band):
     """
     Get the reference image id for this release/band
