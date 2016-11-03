@@ -42,31 +42,36 @@ def relpath_to_local(relpath):
     prepend the $DESDATA path
     """
 
-    DESDATA=get_nfs_rootdir()
-    return os.path.join(DESDATA, relpath)
+    return os.path.join('$DESDATA', relpath)
 
 def relpath_to_remote(relpath):
     """
     prepend remote url base
     """
 
-    remote=get_net_rootdir()
-    return os.path.join(remote, relpath)
+    return os.path.join('$DESREMOTE_RSYNC', relpath)
 
-def _add_local_and_remote_info(res):
+def _add_local_and_remote_info(res, types=None):
+
+    if types is None:
+        types=[None]
+
     for r in res:
 
-        basename=r['filename']
-        comp = r['compression']
-        if comp is not None:
-            basename += comp
+        for type in types:
+            n=Namer(front=type)
 
-        rel_path = os.path.join(r['path'], basename) 
-        r['local_path'] = relpath_to_local(rel_path)
-        r['local_dir'] = os.path.dirname( r['local_path'] )
-        r['remote_url'] = relpath_to_remote(rel_path)
-        r['remote_dir'] = os.path.dirname( r['remote_url'] )
+            basename=r[n('filename')]
+            if n('compression') in r:
+                comp = r[n('compression')]
+                if comp is not None:
+                    basename += comp
 
+            rel_path = os.path.join(r[n('path')], basename) 
+            r[n('local_path')] = relpath_to_local(rel_path)
+            r[n('local_dir')]  = os.path.dirname( r[n('local_path')] )
+            r[n('remote_url')] = relpath_to_remote(rel_path)
+            r[n('remote_dir')] = os.path.dirname( r[n('remote_url')] )
 
 def get_meds_info(release, **kw):
     """
@@ -102,11 +107,11 @@ def get_meds_info(release, **kw):
     from
         proctag t,
         miscfile m,
-        file_archive_info fai 
+        file_archive_info fai
     where
         t.tag='{release}' 
         and t.pfw_attempt_id=m.pfw_attempt_id
-        and m.filetype='coadd_meds' 
+        and m.filetype='coadd_meds'
         and m.filename=fai.filename
     """.format(release=release.upper())
 
@@ -132,8 +137,6 @@ def get_coadd_se_psf_info(release, tilename, **kw):
     """
     get all the SE psf paths for images used in a coadd tile
 
-    This query is amazingly slow, it takes of order a minute
-    
     parameters
     ----------
     release: string
@@ -162,8 +165,7 @@ def get_coadd_se_psf_info(release, tilename, **kw):
     query="""
     select
         pfai.path,
-        pfai.filename,
-        pfai.compression
+        pfai.filename
 
     from
         proctag t,
@@ -200,6 +202,82 @@ def get_coadd_se_psf_info(release, tilename, **kw):
     res=conn.quick(query)
 
     _add_local_and_remote_info(res)
+
+    return res
+
+def get_coadd_se_info(release, tilename, **kw):
+    """
+    get all the SE image and psf paths for images used in a coadd tile.
+
+    parameters
+    ----------
+    release: string
+        The release, or tag name, e.g. 'y3a1_coadd'
+    tilename: string
+        e.g. DES2348+0001
+    bands: string or sequence, optional
+        Optionally limit to the specified bands
+    kw: keywords
+        Other keywods for the database connection
+
+    comments
+    --------
+    This is for the Y3 schema
+    """
+
+    bands=kw.pop('bands',None)
+    if bands is not None:
+        bands=get_as_list(bands)
+        bstr = str(bands).replace('[','').replace(']','')
+        bstr="        and i.band in ({bstr})".format(bstr=bstr)
+
+    else:
+        bstr=""
+
+    query="""
+    select
+        ifai.path as im_path,
+        ifai.filename as im_filename,
+        ifai.compression as im_compression,
+        pfai.path as psf_path,
+        pfai.filename as psf_filename
+    from
+        proctag t,
+        pfw_attempt a,
+        pfw_attempt_val av,
+        task t,
+        desfile d,
+        opm_used u,
+        image i,
+        miscfile m,
+        file_archive_info ifai,
+        file_archive_info pfai 
+
+    where
+        t.tag='Y3A1_COADD' 
+        and t.pfw_attempt_id=av.pfw_attempt_id 
+        and av.key='tilename' 
+        and av.val='DES2348+0001' 
+        and t.pfw_attempt_id=a.id 
+        and t.root_task_id=a.task_id 
+        and t.id=u.task_id  
+        and u.desfile_id=d.id  
+        and d.filetype='red_immask' 
+        and d.filename=i.filename 
+        and d.pfw_attempt_id=m.pfw_attempt_id 
+        and m.filetype='psfex_model' 
+        and m.filename=pfai.filename 
+        and i.ccdnum=m.ccdnum 
+        and i.filename=ifai.filename
+        {bstr}
+    """ .format(release=release.upper(),
+                tilename=tilename,
+                bstr=bstr)
+
+    conn=desdb.Connection(**kw)
+    res=conn.quick(query)
+
+    _add_local_and_remote_info(res, types=['im','psf'])
 
     return res
 
@@ -1486,4 +1564,36 @@ def expand_desvars_v1(string_in, **keys):
         raise ValueError("There were unexpanded variables: '%s'" % string)
 
     return string
+
+class Namer(object):
+    """
+    create strings with a specified front prefix
+    """
+    def __init__(self, front=None, back=None):
+        if front=='':
+            front=None
+        if back=='':
+            back=None
+
+        self.front=front
+        self.back=back
+
+        if self.front is None and self.back is None:
+            self.nomod=True
+        else:
+            self.nomod=False
+
+
+
+    def __call__(self, name):
+        if self.nomod:
+            return name
+        else:
+            n=name
+            if self.front is not None:
+                n = '%s_%s' % (self.front, n)
+            if self.back is not None:
+                n = '%s_%s' % (n, self.back)
+            return n
+
 

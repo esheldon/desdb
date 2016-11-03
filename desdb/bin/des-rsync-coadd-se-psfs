@@ -104,7 +104,10 @@ def main():
 
     print("found",len(pdict),"unique directories")
     for key,p in pdict.iteritems():
-        download_psfs(p['remote_dir'], p['local_dir'], args)
+
+        remote_dir = os.path.expandvars(p['remote_dir'])
+        local_dir  = os.path.expandvars(p['local_dir'])
+        download_psfs(remote_dir, local_dir, args)
 
 if __name__=="__main__":
     main()

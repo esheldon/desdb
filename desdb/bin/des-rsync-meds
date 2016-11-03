@@ -89,14 +89,12 @@ def main():
         bands=bands,
         dbname=args.dbname,
     )
-    """
-    path_data=[
-        {'meds_path': 'OPS/multiepoch/Y3A1/r2577/DES0205-3706/p01/meds/DES0205-3706_r2577p01_r_meds-Y3A1.fits.fz'},
-    ]
-    """
 
     for p in path_data:
-        download_meds(p['remote_url'], p['local_dir'], args)
+        remote_url = os.path.expandvars(p['remote_url'])
+        local_dir  = os.path.expandvars(p['local_dir'])
+
+        download_meds(remote_url, local_dir, args)
 
 if __name__=="__main__":
     main()
