@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+"""
+Download a MEDS files.
+ 
+Currently there are no indices on the tilename and band, so we must
+query everything and put out what we want.  This means it will be
+very slow, similar to time to download the file.
+ 
+Here is an example path
+ 
+$DESDATA/OPS/multiepoch/Y3A1/r2697/DES0557-3832/p01/meds/DES0557-3832_r2697p01_z_meds-Y3A1.fits.fz
+ 
+Author
+    Erin Sheldon, Brookhaven National Laboratory
+ 
+Creation
+    2016-11-02
+ 
+Changes
+""" 
+
+from __future__ import print_function
+
+import os
+import time
+import desdb
+from desdb import files
+
+from argparse import ArgumentParser
+
+parser=ArgumentParser()
+
+parser.add_argument('release', help='release, e.g. y3a1_coass')
+parser.add_argument('tilename', help='coadd tilename, e.g. DES0157-3914')
+parser.add_argument('--bands', default=None,
+                    help='restrict to the given band, e.g. r or g,r,i')
+
+parser.add_argument('--dbname', default='dessci', help='database to use')
+
+def try_make_dir(dir, ntry=3):
+    
+    for i in xrange(ntry):
+        if not os.path.exists(dir):
+            try:
+                os.makedirs(dir)
+                break
+            except OSError as err:
+                print("failed to make directory:", dir)
+                time.sleep(1)
+
+    if not os.path.exists(dir):
+        raise err
+
+def download_meds(remote_url, local_dir, args):
+    """
+    from the end_path, generate the local directory and
+    full remote URL.  Then run rsync to get the files
+    """
+
+    try_make_dir(local_dir)
+
+    cmd="""
+rsync                                     \\
+    -avP                                  \\
+    --password-file "$DES_RSYNC_PASSFILE" \\
+    "{remote_url}"                        \\
+    "{local_dir}/"
+"""
+    
+    cmd=cmd.format(remote_url=remote_url, local_dir=local_dir)
+
+    print(cmd)
+
+    retval=os.system(cmd)
+    if retval != 0:
+        raise IOError("failed to download meds file")
+
+
+def main():
+    args=parser.parse_args()
+
+    bands=args.bands
+    if bands is not None:
+        bands = bands.split(',')
+
+    path_data = files.get_meds_info(
+        args.release,
+        tilename=args.tilename,
+        bands=bands,
+        dbname=args.dbname,
+    )
+    """
+    path_data=[
+        {'meds_path': 'OPS/multiepoch/Y3A1/r2577/DES0205-3706/p01/meds/DES0205-3706_r2577p01_r_meds-Y3A1.fits.fz'},
+    ]
+    """
+
+    for p in path_data:
+        download_meds(p['remote_url'], p['local_dir'], args)
+
+if __name__=="__main__":
+    main()
