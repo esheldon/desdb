@@ -15,6 +15,59 @@ _release_ref_images={'Y1C2_COADD_PRERELEASE':{'g': 443103519,
                                               'z': 442540179,
                                               'Y': 442536081}}
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
+def is_string(s):
+    return isinstance(s, basestring)
+
+def get_as_list(obj):
+    """
+    get a list version of the object.
+
+    get [obj] if it is not already a list/tuple
+    """
+    if isinstance(obj, (list,tuple)):
+        ret=list( obj )
+    else:
+        ret = [obj]
+
+    return ret
+
+
+def relpath_to_local(relpath):
+    """
+    prepend the $DESDATA path
+    """
+
+    DESDATA=get_nfs_rootdir()
+    return os.path.join(DESDATA, relpath)
+
+def relpath_to_remote(relpath):
+    """
+    prepend remote url base
+    """
+
+    remote=get_net_rootdir()
+    return os.path.join(remote, relpath)
+
+def _add_local_and_remote_info(res):
+    for r in res:
+
+        basename=r['filename']
+        comp = r['compression']
+        if comp is not None:
+            basename += comp
+
+        rel_path = os.path.join(r['path'], basename) 
+        r['local_path'] = relpath_to_local(rel_path)
+        r['local_dir'] = os.path.dirname( r['local_path'] )
+        r['remote_url'] = relpath_to_remote(rel_path)
+        r['remote_dir'] = os.path.dirname( r['remote_url'] )
+
+
 def get_meds_info(release, **kw):
     """
     get information about the MEDS files in a given release
@@ -23,12 +76,20 @@ def get_meds_info(release, **kw):
     ----------
     release: string
         The release, or tag name, e.g. 'y3a1_coadd'
+    tilneame: string, optional
+        Optionally limit to the specified tilename
+    bands: string or sequence, optional
+        Optionally limit to the specified bands
     kw: keywords
         Other keywods for the database connection
 
     comments
     --------
-    This is for the Y3 schema
+    This is for the Y3 schema.
+
+    There are no indices on miscfile.tilename and miscfile.band
+    so it is faster to query everything and pull out what we
+    want from that.
     """
 
     query="""
@@ -49,14 +110,27 @@ def get_meds_info(release, **kw):
         and m.filename=fai.filename
     """.format(release=release.upper())
 
+    tilename=kw.pop('tilename',None)
+    bands=kw.pop('bands',None)
+    if bands is not None:
+        bands=get_as_list(bands)
+
     conn=desdb.Connection(**kw)
     res=conn.quick(query)
 
+    if bands is not None:
+        res = [r for r in res if r['band'] in bands]
+
+    if tilename is not None:
+        res = [r for r in res if r['tilename']==tilename]
+
+    _add_local_and_remote_info(res)
+
     return res
 
-def get_coadd_psf_paths(release, tilename, band=None, **kw):
+def get_coadd_se_psf_info(release, tilename, **kw):
     """
-    get all the psf paths for the given tile
+    get all the SE psf paths for images used in a coadd tile
 
     This query is amazingly slow, it takes of order a minute
     
@@ -66,8 +140,8 @@ def get_coadd_psf_paths(release, tilename, band=None, **kw):
         The release, or tag name, e.g. 'y3a1_coadd'
     tilename: string
         e.g. DES2348+0001
-    band: string, optional
-        Optionally limit to the specified band
+    bands: string or sequence, optional
+        Optionally limit to the specified bands
     kw: keywords
         Other keywods for the database connection
 
@@ -76,15 +150,20 @@ def get_coadd_psf_paths(release, tilename, band=None, **kw):
     This is for the Y3 schema
     """
 
-    if band is not None:
-        bstr="        and i.band='{band}'".format(band=band)
+    bands=kw.pop('bands',None)
+    if bands is not None:
+        bands=get_as_list(bands)
+        bstr = str(bands).replace('[','').replace(']','')
+        bstr="        and i.band in ({bstr})".format(bstr=bstr)
+
     else:
         bstr=""
 
     query="""
     select
         pfai.path,
-        pfai.filename
+        pfai.filename,
+        pfai.compression
 
     from
         proctag t,
@@ -120,13 +199,9 @@ def get_coadd_psf_paths(release, tilename, band=None, **kw):
     conn=desdb.Connection(**kw)
     res=conn.quick(query)
 
-    paths=[]
-    for p in res:
-        path = os.path.join(p['path'], p['filename'])
-        paths.append(path)
+    _add_local_and_remote_info(res)
 
-    return paths
-
+    return res
 
 def get_release_ref_image(release, band):
     """
@@ -328,10 +403,16 @@ def get_nfs_rootdir():
 def get_hdfs_rootdir():
     return 'hdfs:///user/esheldon/DES'
 
-def get_net_rootdir():
-    if 'DESREMOTE' not in os.environ:
-        raise ValueError("The DESREMOTE environment variable is not set")
-    return os.environ['DESREMOTE']
+def get_net_rootdir(type='rsync'):
+
+    if type=='rsync':
+        ename='DESREMOTE_RSYNC'
+    else:
+        ename='DESREMOTE'
+    if ename not in os.environ:
+        raise ValueError("The %s environment variable is not set" % ename)
+
+    return os.environ[ename]
 
 def get_scratch_dir():
     if 'DES_SCRATCH' not in os.environ:
