@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import copy
 import os
 from sys import stderr
@@ -196,7 +198,9 @@ def get_coadd_se_psf_info(release, tilename, **kw):
         {bstr}
     """ .format(release=release.upper(),
                 tilename=tilename,
-               bstr=bstr)
+                bstr=bstr)
+
+    print(query, file=stderr)
 
     conn=desdb.Connection(**kw)
     res=conn.quick(query)
@@ -257,7 +261,7 @@ def get_coadd_se_info(release, tilename, **kw):
         t.tag='Y3A1_COADD' 
         and t.pfw_attempt_id=av.pfw_attempt_id 
         and av.key='tilename' 
-        and av.val='DES2348+0001' 
+        and av.val='{tilename}' 
         and t.pfw_attempt_id=a.id 
         and t.root_task_id=a.task_id 
         and t.id=u.task_id  
@@ -273,6 +277,8 @@ def get_coadd_se_info(release, tilename, **kw):
     """ .format(release=release.upper(),
                 tilename=tilename,
                 bstr=bstr)
+
+    print(query, file=stderr)
 
     conn=desdb.Connection(**kw)
     res=conn.quick(query)
@@ -337,7 +343,7 @@ def get_testbed_runs(runconfig):
     import deswl
 
     testbed=runconfig["testbed"]
-    print "using testbed:",testbed
+    print("using testbed:",testbed)
 
     testbed_name=testbed["name"]
 
@@ -353,7 +359,7 @@ def get_testbed_runs(runconfig):
                 runs.append(run)
                 continue
 
-    print "kept %d/%d runs" % (len(runs), len(allruns))
+    print("kept %d/%d runs" % (len(runs), len(allruns)))
     return runs
 
 def get_release_runs(release, **keys):
@@ -433,7 +439,7 @@ def gen_release_runs():
 
         release_map[r] = fname
 
-        print fname
+        print(fname)
         with open(fname,'w') as fobj:
             for tile in tiles:
                 for run in sva1_runs:
@@ -441,7 +447,7 @@ def gen_release_runs():
                         fobj.write('%s\n' % run)
 
     mapfile=get_adhoc_release_file()
-    print mapfile
+    print(mapfile)
     with open(mapfile,'w') as fobj:
         json.dump( release_map, fobj, indent=1, separators=(',', ':'))
 
@@ -548,35 +554,35 @@ def get_coadd_srclist_by_release(release, withbands, **keys):
     fields will be present
     """
 
-    print >>stderr,'getting coadd_runs with bands:',withbands
+    print('getting coadd_runs with bands:',withbands, file=stderr)
     coadd_runs=get_release_runs(release,
                                 withbands=withbands,
                                 **keys)
 
     ncoadd=len(coadd_runs)
-    print >>stderr,'extracting source lists'
+    print('extracting source lists', file=stderr)
 
     # use dict so we only get unique ones
     fdict={}
     for i,coadd_run in enumerate(coadd_runs):
-        print >>stderr,'%d/%d' % (i+1,ncoadd),coadd_run,
+        print('%d/%d' % (i+1,ncoadd),coadd_run, file=stderr, end='')
         for band in withbands:
-            print >>stderr,band,
+            print(band,file=stderr,end='')
             cf=Coadd(coadd_run=coadd_run, band=band, **keys)
 
             cf.load(srclist=True)
             if i==0 and band==withbands[0]:
-                print >>stderr,'\n'
+                print('\n', file=stderr)
                 pprint(cf.srclist[0],stream=stderr)
-                print >>stderr,'\n'
+                print('\n', file=stderr)
 
             for fd in cf.srclist:
                 key='%s-%s' % (fd['expname'], fd['ccd'])
                 fdict[key] = fd
 
-        print >>stderr,""
+        print("", file=stderr)
 
-    print >>stderr,'converting to list of dicts'
+    print('converting to list of dicts', file=stderr)
     data = [fdict[key] for key in fdict]
     return data
 
@@ -667,7 +673,7 @@ def get_red_info_by_runlist(runlist,
         nrun=len(runlist)
         for i,run in enumerate(runlist):
 
-            print >>stderr,"    %d/%d %s" % (i+1,nrun,run)
+            print("    %d/%d %s" % (i+1,nrun,run), file=stderr)
 
             data = get_red_info_by_run(run)
             dlist += data
@@ -738,13 +744,13 @@ def get_red_info_by_release(release,
                             host=None,
                             show=True):
 
-    print >>stderr,"getting runlist"
+    print("getting runlist", file=stderr)
     runs=get_release_runs(release)
-    print >>stderr,"getting info by runlist"
+    print("getting info by runlist", file=stderr)
     dlist = get_red_info_by_runlist(runs)
     
     if bands is not None:
-        print >>stderr,"selecting bands:",bands
+        print("selecting bands:",bands, file=stderr)
         if isinstance(bands,basestring):
             bands=[bands]
 
@@ -977,7 +983,7 @@ class Coadd(dict):
             raise ValueError("got %d entries for coadd_run=%s band=%s" % vals)
         if len(res)==0:
             vals=(self.coadd_run,self.band)
-            print query
+            print(query)
             raise ValueError("got no entries for coadd_run=%s band=%s" % vals)
 
         if len(res) > 0:
@@ -1101,7 +1107,7 @@ class Coadd(dict):
             idlist.append(str(tid))
             zpdict[tid] = d['magzp']
 
-        print 'found',len(idlist),'ids'
+        print('found',len(idlist),'ids')
         idcsv = ', '.join(idlist)
 
         query="""

@@ -82,12 +82,21 @@ def main():
     if bands is not None:
         bands = bands.split(',')
 
+    """
     path_data = files.get_coadd_se_psf_info(
         args.release,
         args.tilename,
         bands=bands,
         dbname=args.dbname,
     )
+    """
+    path_data = files.get_coadd_se_info(
+        args.release,
+        args.tilename,
+        bands=bands,
+        dbname=args.dbname,
+    )
+
 
     print("found total of",len(path_data),"files")
 
@@ -95,12 +104,21 @@ def main():
     pdict = {}
     for p in path_data:
 
+        """
         local_dir=p['local_dir']
 
         pdict[local_dir] = {
             'local_dir':local_dir,
             'remote_dir':p['remote_dir'],
         }
+        """
+        local_dir=p['psf_local_dir']
+
+        pdict[local_dir] = {
+            'local_dir':local_dir,
+            'remote_dir':p['psf_remote_dir'],
+        }
+
 
     print("found",len(pdict),"unique directories")
     for key,p in pdict.iteritems():
