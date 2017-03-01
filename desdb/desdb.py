@@ -1450,9 +1450,7 @@ class ArrayStringifier:
 def replace_none_rows(old_rows, replace_value):
     new_rows=[]
     for old_row in old_rows:
-        print("old row:",old_row)
         new_row = replace_none_row(old_row, replace_value)
-        print("new row:",new_row)
 
         new_rows.append( new_row )
 
