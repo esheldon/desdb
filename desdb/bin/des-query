@@ -18,6 +18,12 @@ from optparse import OptionParser
 parser=OptionParser(__doc__)
 parser.add_option("-q","--query",default=None, help="A query to execute instead of stdin.")
 
+parser.add_option("-o","--outfile",default=None, help="file to write for ordinary queries")
+
+parser.add_option("--prefetch",type=int,default=desdb.desdb._PREFETCH,
+                  help=("number of rows to prefech while transferring "
+                        "data, default %default"))
+
 parser.add_option("-u","--user",default=None, help="Username.")
 parser.add_option("-p","--password",default=None, help="Password.")
 parser.add_option("--host",default=None, help="over-ride default host")
@@ -33,8 +39,10 @@ parser.add_option("--dbname",
 parser.add_option("-s","--show",action='store_true', help="Show query on stderr.")
 
 parser.add_option("-f","--format",default=None,
-    help=("File format for output.  csv,space,tab,json,cjson,pyobj,pretty."
-          "Default %default for ordinary queries."))
+    help=("File format for output.  fits,csv,space,tab,json,cjson,pyobj,pretty."
+          "Default %default for ordinary queries.  For fits "
+          "output, you must send the filename with -o"))
+
 parser.add_option('--nohead',action='store_true', help="do not print the header")
 
 parser.add_option("-d","--describe",default=None, 
@@ -44,6 +52,11 @@ parser.add_option("-c","--comments",action='store_true',
 
 parser.add_option("-l","--list-tables",action='store_true', 
                   help="List available tables. Default format is 'pretty'")
+
+parser.add_option("--replace-none",
+                  type=float,
+                  default=None,
+                  help="replace None with this value")
 
 
 def get_conn(options):
@@ -92,7 +105,15 @@ def main():
         else:
             header='names'
 
-        res=conn.quickWrite(query,show=options.show,fmt=format,header=header)
+        res=conn.quickWrite(
+            query,
+            show=options.show,
+            fmt=format,
+            header=header,
+            prefetch=options.prefetch,
+            replace_none=options.replace_none,
+            file=options.outfile,
+        )
 
 if __name__=="__main__":
     main()

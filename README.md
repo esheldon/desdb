@@ -29,9 +29,9 @@ queries on standard input or via the -q option
     cat file | des-query
 
 By default the output format is csv.  You can control this with the -f/--format
-option.  Possibilities are csv,space,json,pretty,pyobj.  pretty is a formatted
-in nicely for viewing but is not good for machine reading.  pyobj can be read
-from python using eval
+option.  Possibilities are csv,fits,space,json,pretty,pyobj.  pretty is a
+formatted in nicely for viewing but is not good for machine reading.  pyobj can
+be read from python using eval
 
 You can also get a listing of tables with -l, and describe tables with -d.
 
@@ -45,7 +45,10 @@ examples
 
     des-query < sql_file > output.csv
 
-    des-query -f json < sql_file > output.json
+    # write the results to a fits binary table.  You must specify the output
+    # file name
+
+    des-query -f fits -o output.fits < sql_file
 
     # list all the tables
     des-query -l

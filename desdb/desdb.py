@@ -1,7 +1,7 @@
 """
 Based partly on code in the DES trivialAccess.py
 """
-
+from __future__ import print_function
 import os
 import sys
 from sys import stdout,stderr
@@ -112,6 +112,7 @@ class Connection(cx_Oracle.Connection):
 
 
     def quick(self, query, lists=False, strings=False, array=False,
+              prefetch=_PREFETCH,
               show=False, **keys):
         """
         Execute the query and return the result.
@@ -135,7 +136,7 @@ class Connection(cx_Oracle.Connection):
         curs=self.cursor()
 
         # pre-fetch
-        curs.arraysize = _PREFETCH
+        curs.arraysize = prefetch
 
         if show: 
             stderr.write(query);stderr.write('\n')
@@ -162,7 +163,10 @@ class Connection(cx_Oracle.Connection):
         return res
 
     def quickWrite(self, query, fmt='csv', header='names',
-                   file=sys.stdout, show=False):
+                   prefetch=_PREFETCH,
+                   replace_none=None,
+                   file=None,
+                   show=False):
         """
         Execute the query and print the results.
 
@@ -176,21 +180,38 @@ class Connection(cx_Oracle.Connection):
             If not False, put a header.  Can be
                 'names' csv names
                 others?
-        file: file object, optional
-            Write the results to the file. Default is stdout
+        file: string
+            Write the results to the file rather than
+            standard output
+
         show: bool, optional
             If True, print the query to stderr
         """
 
         curs=self.cursor()
-        curs.arraysize = _PREFETCH
+        curs.arraysize = prefetch
 
         if show: 
             stderr.write(query)
         curs.execute(query)
 
         if curs.description is not None:
-            print_cursor(curs, fmt=fmt, header=header, file=file)
+            if fmt=='fits':
+                if file is None:
+                    raise RuntimeError("you must send file= for fits writing")
+
+                cursor2fits(
+                    file,
+                    curs,
+                    replace_none=replace_none,
+                )
+            else:
+                print_cursor(
+                    curs,
+                    fmt=fmt,
+                    header=header,
+                    replace_none=replace_none,
+                    file=file)
         curs.close()
 
     def describe(self, table, fmt='pretty', comments=False, show=False):
@@ -321,8 +342,13 @@ def cursor2dictlist(curs, lower=True):
 
     return output
 
-def print_cursor(curs, fmt='csv', header='names', file=sys.stdout):
-    rw=CursorWriter(fmt=fmt, file=file, header=header)
+def print_cursor(curs, fmt='csv', header='names', replace_none=None, file=None):
+    rw=CursorWriter(
+        fmt=fmt,
+        file=file,
+        header=header,
+        replace_none=replace_none,
+    )
     rw.write(curs)
 
 def write_json(obj, fmt):
@@ -336,14 +362,16 @@ def write_json(obj, fmt):
         json.dump(obj, stdout, indent=1, separators=(',', ':'))
 
 
-class CursorWriter:
+class CursorWriter(object):
     """
     The only reason for it is that, for csv, we can work row by row and save
     memory.
     """
-    def __init__(self, file=sys.stdout, fmt='csv', header='names'):
+    def __init__(self, file=None, fmt='csv', header='names', replace_none=None):
         self.fmt=fmt
         self.header_type=header
+        self.replace_none=replace_none
+
         self.file=file
 
     def write(self, curs):
@@ -375,9 +403,14 @@ class CursorWriter:
         ncol = len(desc)
         if 0 == ncol:
             return
+        
+        if self.file is not None:
+            fobj = open(self.file,'w')
+        else:
+            fobj=sys.stdout
 
         if self.fmt=='csv':
-            writer = csv.writer(self.file,dialect='excel',
+            writer = csv.writer(fobj,dialect='excel',
                                 quoting=csv.QUOTE_MINIMAL,
                                 lineterminator = '\n')
         else:
@@ -388,7 +421,7 @@ class CursorWriter:
             else:
                 raise ValueError("bad format type: '%s'" % self.fmt)
 
-            writer = csv.writer(self.file,dialect='excel',
+            writer = csv.writer(fobj,dialect='excel',
                                 delimiter=delim,
                                 quoting=csv.QUOTE_MINIMAL,
                                 lineterminator = '\n')
@@ -403,11 +436,18 @@ class CursorWriter:
         nresults = 0
         try:
             for row in curs:
+                if self.replace_none:
+                    row = replace_none_row(row, self.replace_none)
+
                 writer.writerow(row)
                 nresults += 1
         except KeyboardInterrupt:
             curs.close()
             raise RuntimeError("Interrupt encountered")
+        
+        if self.file is not None:
+            fobj.close()
+
         return nresults
 
     def write_pretty(self, curs, **keys):
@@ -418,6 +458,12 @@ class CursorWriter:
             raise RuntimeError("Interrupt encountered")
 
     def _write_pretty(self, curs, **keys):
+
+        if self.file is not None:
+            fobj = open(self.file,'w')
+        else:
+            fobj=sys.stdout
+
 
         max_lens=[]
         names=[]
@@ -469,28 +515,31 @@ class CursorWriter:
 
         header=' | '.join(header)
 
-        self.file.write(header)
-        self.file.write('\n')
-        self.file.write(separator)
-        self.file.write('\n')
+        fobj.write(header)
+        fobj.write('\n')
+        fobj.write(separator)
+        fobj.write('\n')
 
         for i,row in enumerate(strings):
             if (((i+1) % 50) == 0):
-                self.file.write(separator)
-                self.file.write('\n')
-                self.file.write(header)
-                self.file.write('\n')
-                self.file.write(separator)
-                self.file.write('\n')
+                fobj.write(separator)
+                fobj.write('\n')
+                fobj.write(header)
+                fobj.write('\n')
+                fobj.write(separator)
+                fobj.write('\n')
             
-            self.file.write(row_fmt % tuple(row))
-            self.file.write('\n')
+            fobj.write(row_fmt % tuple(row))
+            fobj.write('\n')
 
-        self.file.flush()
+        fobj.flush()
 
 
-class ObjWriter:
-    def __init__(self, file=sys.stdout, fmt='csv', header='names'):
+        if self.file is not None:
+            fobj.close()
+
+class ObjWriter(object):
+    def __init__(self, file=None, fmt='csv', header='names'):
         self.fmt=fmt
         self.header_type=header
         self.file=file
@@ -533,7 +582,12 @@ class ObjWriter:
         if 0 == ncol:
             return
 
-        writer = csv.DictWriter(self.file, list(data.keys()),
+        if file is None:
+            fobj=sys.stdout
+        else:
+            fobj=open(file,'w')
+
+        writer = csv.DictWriter(fobj, list(data.keys()),
                                 quoting=csv.QUOTE_MINIMAL,
                                 lineterminator = '\n')
 
@@ -542,9 +596,17 @@ class ObjWriter:
         else:
             raise ValueError("Only support names as header for now")
 
+        if file is not None:
+            fobj.close()
+
         writer.writerows(data)
 
     def write_pretty(self, data, delim=' ', maxwidth=30):
+
+        if file is None:
+            fobj=sys.stdout
+        else:
+            fobj=open(file,'w')
 
         # build up a format string
         formats=[]
@@ -565,18 +627,20 @@ class ObjWriter:
         count = 0
         for row in curs:
             if ((count % 50) == 0):
-                self.file.write('\n')
-                self.file.write(format % tuple(names))
-                self.file.write('\n')
-                self.file.write(format % tuple(separators))
-                self.file.write('\n')
+                fobj.write('\n')
+                fobj.write(format % tuple(names))
+                fobj.write('\n')
+                fobj.write(format % tuple(separators))
+                fobj.write('\n')
 
-            self.file.write(format % row)
-            self.file.write('\n')
+            fobj.write(format % row)
+            fobj.write('\n')
 
             count += 1
 
 
+        if self.file is not None:
+            fobj.close()
 
 
 
@@ -760,6 +824,9 @@ def cursor2array(curs,
 
     parameters
     ----------
+    curs: cursor or iterator of some kind
+        This could be a cursor, or the result of curs.fetchmany( ) etc.
+
     dtype: numpy dtype or descr, optional
         A dtype for conversion.  If not sent it will be derived
         from the cursor.
@@ -782,6 +849,66 @@ def cursor2array(curs,
                               lower=lower)
     arr = numpy.fromiter(curs, dtype=dtype)
     return arr
+
+def cursor2fits(fitsfile,
+                curs,
+                replace_none=None,
+                dtype=None,
+                f4_digits=_defs['f4_digits'],
+                f8_digits=_defs['f8_digits'],
+                lower=_defs['lower']):
+    """
+    Convert an cx_ Oracle cursor object into a NumPy array.
+        
+    If the dtype is not given, the description field is converted to a NumPy
+    type list using the get_numpy_descr() function.
+
+    parameters
+    ----------
+    dtype: numpy dtype or descr, optional
+        A dtype for conversion.  If not sent it will be derived
+        from the cursor.
+    f4_digits, f8_digits:  int
+        The number of digits to demand when converting to these types from
+        number(digits,n).  The default is 6 or less for floats and 7-15 for
+        double, e.g. f4_digits=6, f8_digits=15  For example if you want
+        everything to be double use f4_digits=0
+
+    EXAMPLES
+        curs=conn.cursor()
+        curs.execute(query)
+        arr = Cursor2Array(curs)
+    """
+    import numpy
+    import fitsio
+
+    if dtype is None:
+        dtype=get_numpy_descr(curs.description, 
+                              f4_digits=f4_digits,
+                              f8_digits=f8_digits,
+                              lower=lower)
+    
+    with fitsio.FITS(fitsfile,'rw',clobber=True) as fits:
+
+        first=True
+        while True:
+            # we rely on the user setting a sensible arraysize (prefetch)
+            rows = curs.fetchmany()
+            if len(rows)==0:
+                break
+
+            if replace_none:
+                rows = replace_none_rows(rows, replace_none)
+
+            data = cursor2array(
+                rows,
+                dtype=dtype,
+            )
+            if first:
+                first=False
+                fits.write(data)
+            else:
+                fits[-1].append(data)
 
 
 def get_numpy_descr(odesc,
@@ -963,14 +1090,14 @@ def array2table(arr, table_name, control_file,
     data_file="%s.csv" % control_file
     if create:
         create_file="%s.create.sql" % control_file
-        print 'writing create table statement',create_file
+        print( 'writing create table statement',create_file )
         with open(create_file,'w') as fobj:
             fobj.write(create_statement)
 
     names = [d[0] for d in alldefs]
     name_list=',\n      '.join(names)
 
-    print 'writing control file',control_file
+    print( 'writing control file',control_file )
     with open(control_file,'w') as fobj:
 
         head=_ctl_template.format(table_name=table_name,
@@ -978,7 +1105,7 @@ def array2table(arr, table_name, control_file,
                                   infile=data_file)
         fobj.write(head)
 
-    print 'writing data file',data_file
+    print( 'writing data file',data_file )
     with open(data_file,'w') as fobj:
         _write_sqlldr_data(arr, fobj)
 
@@ -1293,7 +1420,7 @@ class ArrayWriter:
 
     def close(self):
         if self._close_the_fobj:
-            print 'closing'
+            print( 'closing' )
             self._fobj.close()
 
     def __del__(self):
@@ -1319,3 +1446,24 @@ class ArrayStringifier:
             values.append( repr(aflat[i]) )
 
         return self._delim.join(values)
+
+def replace_none_rows(old_rows, replace_value):
+    new_rows=[]
+    for old_row in old_rows:
+        print("old row:",old_row)
+        new_row = replace_none_row(old_row, replace_value)
+        print("new row:",new_row)
+
+        new_rows.append( new_row )
+
+    return new_rows
+
+def replace_none_row(old_row, replace_value):
+    new_row=()
+    for val in old_row:
+        if val is None:
+            val=replace_value
+        new_row += (val,)
+    return new_row
+
+
