@@ -1,3 +1,5 @@
+# DEPRECATED: `desdb` is formally deprecated in favor of `easyaccess` or the DESDM python API
+
 desdb
 =====
 
